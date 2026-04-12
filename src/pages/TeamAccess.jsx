@@ -168,10 +168,11 @@ export default function TeamAccess() {
   const [sso,        setSso]        = useState({ enabled: false, provider: 'okta', domain: '', entityId: '', acsUrl: '' })
 
   // Roles state — built-in + custom
-  const [roles,       setRoles]       = useState(BUILT_IN_ROLES)
-  const [permissions, setPermissions] = useState(DEFAULT_PERMISSIONS)
-  const [createOpen,  setCreateOpen]  = useState(false)
-  const [editingRole, setEditingRole] = useState(null) // key of role being edited inline
+  const [roles,        setRoles]        = useState(BUILT_IN_ROLES)
+  const [permissions,  setPermissions]  = useState(DEFAULT_PERMISSIONS)
+  const [createOpen,   setCreateOpen]   = useState(false)
+  const [selectedRole, setSelectedRole] = useState('admin')
+  const [permsDirty,   setPermsDirty]   = useState(false)
 
   const filtered = team.filter((m) =>
     !search ||
@@ -216,6 +217,7 @@ export default function TeamAccess() {
       const next = curr.includes(permKey) ? curr.filter((k) => k !== permKey) : [...curr, permKey]
       return { ...prev, [roleKey]: next }
     })
+    setPermsDirty(true)
   }
 
   function handleCreateRole({ id, label, desc, permissions: perms, color, system }) {
@@ -389,90 +391,96 @@ export default function TeamAccess() {
 
       {/* ── ROLES & PERMISSIONS ── */}
       {tab === 'roles' && (
-        <div className="space-y-5">
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-ink-secondary">
-              Click any cell to toggle a permission. System roles are pre-configured but can be adjusted.
-              Custom roles can be created, edited, and deleted.
-            </div>
-            <Button size="sm" onClick={() => setCreateOpen(true)}>
+        <div className="flex gap-5 min-h-0">
+
+          {/* Left: role list */}
+          <div className="w-56 flex-shrink-0 flex flex-col gap-2">
+            {Object.entries(roles).map(([key, r]) => {
+              const count = (permissions[key] || []).length
+              return (
+                <button
+                  key={key}
+                  onClick={() => { setSelectedRole(key); setPermsDirty(false) }}
+                  className={cn(
+                    'w-full text-left p-3 rounded-lg border transition-colors',
+                    selectedRole === key
+                      ? 'bg-brand-light border-brand'
+                      : 'bg-surface-primary border-line hover:border-brand/40 hover:bg-surface-hover'
+                  )}
+                >
+                  <div className="flex items-center justify-between gap-1 mb-1">
+                    <Badge variant={r.color} className="text-[10px]">{r.label}</Badge>
+                    {!r.system && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDeleteRole(key) }}
+                        className="text-ink-tertiary hover:text-destructive transition-colors"
+                      >
+                        <Trash2 size={11} />
+                      </button>
+                    )}
+                  </div>
+                  <div className="text-[10px] text-ink-tertiary mt-1">
+                    {count} of {PERMISSION_LIST.length} permissions
+                  </div>
+                </button>
+              )
+            })}
+            <Button size="sm" variant="secondary" className="mt-1" onClick={() => setCreateOpen(true)}>
               <Plus size={13} /> Create Role
             </Button>
           </div>
 
-          {/* Role cards */}
-          <div className="grid grid-cols-3 gap-3">
-            {Object.entries(roles).map(([key, r]) => {
-              const perms = permissions[key] || []
-              return (
-                <div key={key} className="card p-4">
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <div>
-                      <Badge variant={r.color} className="text-[11px] mb-1">{r.label}</Badge>
-                      {r.system && <div className="text-[10px] text-ink-tertiary">System role</div>}
+          {/* Right: permission checkboxes for selected role */}
+          {selectedRole && roles[selectedRole] && (() => {
+            const role = roles[selectedRole]
+            const rolePerms = permissions[selectedRole] || []
+            const groupList = [...new Set(PERMISSION_LIST.map((p) => p.group))]
+            return (
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-4 mb-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <Badge variant={role.color}>{role.label}</Badge>
+                      {role.system && <span className="text-[10px] text-ink-tertiary">System role</span>}
                     </div>
-                    {!r.system && (
-                      <button onClick={() => handleDeleteRole(key)}
-                        className="text-ink-tertiary hover:text-destructive transition-colors flex-shrink-0">
-                        <Trash2 size={13} />
-                      </button>
-                    )}
+                    <div className="text-sm text-ink-secondary">{role.desc}</div>
                   </div>
-                  <div className="text-xs text-ink-secondary mb-2">{r.desc}</div>
-                  <div className="text-[10px] text-ink-tertiary">{perms.length} of {PERMISSION_LIST.length} permissions</div>
+                  <Button
+                    size="sm"
+                    disabled={!permsDirty}
+                    onClick={() => { toast.success(`Permissions saved for ${role.label}`); setPermsDirty(false) }}
+                  >
+                    Save Changes
+                  </Button>
                 </div>
-              )
-            })}
-          </div>
 
-          {/* Permissions matrix */}
-          <div className="card overflow-x-auto">
-            <div className="px-5 py-3 border-b border-line font-semibold text-sm text-ink-primary">
-              Permission Matrix
-              <span className="ml-2 text-xs font-normal text-ink-tertiary">— click to toggle</span>
-            </div>
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-line">
-                  <th className="text-left px-4 py-3 font-semibold text-ink-secondary sticky left-0 bg-surface-primary w-44">Permission</th>
-                  <th className="text-left px-3 py-3 font-semibold text-ink-tertiary w-20">Group</th>
-                  {Object.entries(roles).map(([key, r]) => (
-                    <th key={key} className="px-3 py-3 text-center font-semibold text-ink-secondary min-w-[100px]">
-                      <Badge variant={r.color} className="text-[10px]">{r.label}</Badge>
-                    </th>
+                <div className="card p-5 space-y-5">
+                  {groupList.map((group) => (
+                    <div key={group}>
+                      <div className="text-[11px] font-semibold text-ink-tertiary uppercase tracking-wider mb-2.5">
+                        {group}
+                      </div>
+                      <div className="space-y-2">
+                        {PERMISSION_LIST.filter((p) => p.group === group).map((p) => (
+                          <label key={p.key} className="flex items-center gap-3 cursor-pointer group">
+                            <input
+                              type="checkbox"
+                              checked={rolePerms.includes(p.key)}
+                              onChange={() => togglePermission(selectedRole, p.key)}
+                              className="accent-brand w-4 h-4 flex-shrink-0"
+                            />
+                            <span className="text-sm text-ink-primary group-hover:text-brand transition-colors">
+                              {p.label}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
                   ))}
-                </tr>
-              </thead>
-              <tbody>
-                {PERMISSION_LIST.map((p) => (
-                  <tr key={p.key} className="border-b border-line last:border-0 hover:bg-surface-hover">
-                    <td className="px-4 py-2.5 font-medium text-ink-primary sticky left-0 bg-inherit">{p.label}</td>
-                    <td className="px-3 py-2.5 text-ink-tertiary">{p.group}</td>
-                    {Object.keys(roles).map((role) => {
-                      const has = (permissions[role] || []).includes(p.key)
-                      return (
-                        <td key={role} className="px-3 py-2.5 text-center">
-                          <button
-                            onClick={() => togglePermission(role, p.key)}
-                            title={has ? 'Click to remove permission' : 'Click to add permission'}
-                            className="mx-auto transition-opacity hover:opacity-70"
-                          >
-                            {has
-                              ? <CheckCircle2 size={15} className="text-positive" />
-                              : <XCircle size={15} className="text-line" />
-                            }
-                          </button>
-                        </td>
-                      )
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="flex justify-end">
-            <Button onClick={() => toast.success('Permission changes saved')}>Save Changes</Button>
-          </div>
+                </div>
+              </div>
+            )
+          })()}
         </div>
       )}
 

@@ -86,7 +86,7 @@ export default function App() {
 
         {/* ── Settings (own shell, no main sidebar) ── */}
         <Route path="/settings" element={<SettingsShell />}>
-          <Route index element={<Navigate to="/settings/profile" replace />} />
+          <Route index element={<Navigate to="/settings/preferences" replace />} />
           <Route path="profile"        element={<Profile />} />
           <Route path="preferences"    element={<Preferences />} />
           <Route path="notifications"  element={<Notifications />} />

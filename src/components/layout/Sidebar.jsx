@@ -14,7 +14,7 @@
  */
 
 import React, { useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, Link } from 'react-router-dom'
 import {
   LayoutList, Plus, Circle, Archive, Layers, Diamond, PlusCircle,
   CheckSquare, Monitor, Upload, BarChart2, Activity, AlignJustify,
@@ -96,14 +96,15 @@ export default function Sidebar() {
       aria-label="Main navigation"
     >
       {/* ── Logo ── height matches TopNav (h-topnav = 52px) so border-b aligns */}
-      <div className="flex items-center gap-2.5 px-4 h-topnav border-b border-line flex-shrink-0">
+      <Link to="/" className="flex items-center gap-2.5 px-4 h-topnav border-b border-line flex-shrink-0
+                              hover:opacity-80 transition-opacity">
         <img
           src={logo}
           alt="Uniblox"
           className="h-7 w-auto object-contain flex-shrink-0"
         />
         <span className="text-sm font-semibold text-ink-primary tracking-tight">Uniblox</span>
-      </div>
+      </Link>
 
       {/* ── Carrier context switcher ── */}
       {/* Lets users scope the entire UI to a specific carrier contract. */}

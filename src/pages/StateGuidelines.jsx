@@ -31,67 +31,61 @@ export default function StateGuidelines() {
 
   const rules = getStateRules(selected)
 
-  const q = search.trim().toUpperCase()
   const filtered = ALL_STATES.filter((s) =>
-    !q || s.includes(q) || STATE_NAMES[s]?.toUpperCase().includes(search.trim().toUpperCase())
+    !search.trim() ||
+    s.includes(search.trim().toUpperCase()) ||
+    STATE_NAMES[s]?.toUpperCase().includes(search.trim().toUpperCase())
   )
 
-  const featured = filtered.filter((s) => FEATURED_STATES.includes(s))
-  const others   = filtered.filter((s) => !FEATURED_STATES.includes(s))
-
   return (
-    <div className="flex gap-5">
-      {/* Left: state selector */}
-      <div className="w-56 flex-shrink-0">
-        <PageHeader title="State Guidelines" className="mb-3" />
-        <Input
-          placeholder="Search states…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="mb-3"
-        />
+    <div className="flex gap-5 h-full">
 
-        {featured.length > 0 && (
-          <>
-            <div className="text-[11px] font-semibold text-ink-tertiary uppercase tracking-wider px-1 mb-1">
-              Full Detail
-            </div>
-            {featured.map((s) => (
-              <StateButton key={s} state={s} name={STATE_NAMES[s]} selected={selected} onClick={setSelected} />
-            ))}
-          </>
-        )}
-
-        {others.length > 0 && (
-          <>
-            <div className="text-[11px] font-semibold text-ink-tertiary uppercase tracking-wider px-1 mb-1 mt-3">
-              All States
-            </div>
-            <div className="flex flex-wrap gap-1">
-              {others.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setSelected(s)}
-                  title={STATE_NAMES[s]}
-                  className={cn(
-                    'px-2 py-1 text-xs rounded border transition-colors',
-                    s === selected
-                      ? 'bg-brand text-white border-brand'
-                      : 'border-line text-ink-secondary hover:border-brand hover:text-brand'
-                  )}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
+      {/* Left: scrollable state list */}
+      <div className="w-56 flex-shrink-0 flex flex-col">
+        <div className="mb-3">
+          <h1 className="text-base font-semibold text-ink-primary mb-2">State Guidelines</h1>
+          <Input
+            placeholder="Search states…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="flex-1 overflow-y-auto space-y-0.5 pr-1"
+             style={{ maxHeight: 'calc(100vh - 180px)' }}>
+          {filtered.map((s) => (
+            <button
+              key={s}
+              onClick={() => setSelected(s)}
+              className={cn(
+                'w-full text-left px-3 py-2 rounded text-sm border transition-colors flex items-center gap-2',
+                s === selected
+                  ? 'bg-brand-light border-brand text-brand font-medium'
+                  : 'border-transparent text-ink-secondary hover:bg-surface-hover hover:text-ink-primary'
+              )}
+            >
+              <span className="font-mono text-[11px] text-ink-tertiary flex-shrink-0 w-6">{s}</span>
+              <span className="truncate">{STATE_NAMES[s]}</span>
+              {FEATURED_STATES.includes(s) && (
+                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-brand flex-shrink-0" title="Full detail available" />
+              )}
+            </button>
+          ))}
+          {filtered.length === 0 && (
+            <div className="text-sm text-ink-tertiary px-3 py-4 text-center">No states match</div>
+          )}
+        </div>
+        <div className="pt-2 border-t border-line mt-2">
+          <div className="flex items-center gap-1.5 text-[11px] text-ink-tertiary">
+            <span className="w-1.5 h-1.5 rounded-full bg-brand flex-shrink-0" />
+            Full detail available
+          </div>
+        </div>
       </div>
 
       {/* Right: state detail */}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 overflow-y-auto">
         <div className="flex items-center gap-3 mb-5">
-          <div className="w-10 h-10 rounded-lg bg-brand/10 flex items-center justify-center text-sm font-bold text-brand">
+          <div className="w-10 h-10 rounded-lg bg-brand/10 flex items-center justify-center text-sm font-bold text-brand flex-shrink-0">
             {selected}
           </div>
           <div>
@@ -116,7 +110,6 @@ export default function StateGuidelines() {
         )}
 
         <div className="grid grid-cols-2 gap-4">
-          {/* GI / Rating */}
           <DetailCard title="Guaranteed Issue & Rating">
             {[
               ['Small Group Limit',    `≤ ${rules.smallGroupLimit} employees`],
@@ -126,7 +119,6 @@ export default function StateGuidelines() {
             ]}
           </DetailCard>
 
-          {/* Auto-decline */}
           <DetailCard title="Auto-Decline Rules">
             {[
               ['Auto-Decline Permitted', rules.autoDeclinePermitted ? 'Yes (large groups)' : 'PROHIBITED for small groups'],
@@ -134,7 +126,6 @@ export default function StateGuidelines() {
             ]}
           </DetailCard>
 
-          {/* Adverse action */}
           <DetailCard title="Adverse Action Requirements">
             {[
               ['Notice Deadline',   `${rules.adverseActionNoticeDays} calendar days`],
@@ -143,7 +134,6 @@ export default function StateGuidelines() {
             ]}
           </DetailCard>
 
-          {/* Prohibited factors */}
           <DetailCard title="Prohibited Risk Factors">
             <div className="flex flex-wrap gap-1 mt-1">
               {rules.prohibitedRiskFactors.map((f) => (
@@ -152,7 +142,6 @@ export default function StateGuidelines() {
             </div>
           </DetailCard>
 
-          {/* Special requirements */}
           <DetailCard title="Special Requirements">
             {rules.specialRequirements?.length > 0 ? (
               <ul className="space-y-1">
@@ -165,7 +154,6 @@ export default function StateGuidelines() {
             ) : <span className="text-sm text-ink-tertiary">None</span>}
           </DetailCard>
 
-          {/* Filing & continuance */}
           <DetailCard title="Filing & Continuance">
             {[
               ['Filing Requirements', rules.filingRequirements || 'Standard state filings'],
@@ -174,7 +162,6 @@ export default function StateGuidelines() {
           </DetailCard>
         </div>
 
-        {/* Regulatory contact */}
         <div className="card p-4 mt-4">
           <div className="font-semibold text-sm mb-2">Regulatory Contact</div>
           <div className="text-sm text-ink-secondary">
@@ -196,23 +183,6 @@ export default function StateGuidelines() {
         </div>
       </div>
     </div>
-  )
-}
-
-function StateButton({ state, name, selected, onClick }) {
-  return (
-    <button
-      onClick={() => onClick(state)}
-      className={cn(
-        'w-full text-left px-3 py-2 rounded text-sm border transition-colors mb-0.5 flex items-center gap-2',
-        state === selected
-          ? 'bg-brand-light border-brand text-brand font-medium'
-          : 'border-transparent text-ink-secondary hover:bg-surface-hover hover:text-ink-primary'
-      )}
-    >
-      <span className="font-mono text-[11px] text-ink-tertiary flex-shrink-0 w-6">{state}</span>
-      <span className="truncate">{name}</span>
-    </button>
   )
 }
 
