@@ -1,0 +1,180 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Design tokens ──────────────────────────────────────────── */
+:root {
+  --bg-primary:    #FFFFFF;
+  --bg-secondary:  #F7F7F5;
+  --bg-tertiary:   #EFEEEB;
+  --bg-hover:      #F0F0ED;
+  --border:        #E8E7E4;
+  --border-strong: #D3D2CE;
+  --text-primary:  #1A1A1A;
+  --text-secondary:#6B6B6B;
+  --text-tertiary: #9B9B9B;
+  --accent:        #2383E2;
+  --accent-hover:  #1A6FCC;
+  --accent-light:  #EBF3FD;
+  --accent-text:   #1557A0;
+  --success:       #0F9D58;
+  --success-light: #E8F5EE;
+  --success-text:  #0A6B3E;
+  --warning:       #F4A623;
+  --warning-light: #FEF3E2;
+  --warning-text:  #8A5A00;
+  --danger:        #D93025;
+  --danger-light:  #FDECEA;
+  --danger-text:   #8B1A14;
+  --purple:        #6940D6;
+  --purple-light:  #F0EBFF;
+  --purple-text:   #3D2080;
+}
+
+.dark {
+  --bg-primary:    #191919;
+  --bg-secondary:  #222222;
+  --bg-tertiary:   #2A2A2A;
+  --bg-hover:      #2F2F2F;
+  --border:        #333333;
+  --border-strong: #444444;
+  --text-primary:  #EFEFEF;
+  --text-secondary:#9B9B9B;
+  --text-tertiary: #666666;
+  --accent:        #4A9EFF;
+  --accent-hover:  #6AB0FF;
+  --accent-light:  #1A2D45;
+  --accent-text:   #7DC0FF;
+  --success:       #34C97A;
+  --success-light: #0D2E1C;
+  --success-text:  #5FE09A;
+  --warning:       #F4A623;
+  --warning-light: #2E2210;
+  --warning-text:  #F9C96A;
+  --danger:        #FF6B6B;
+  --danger-light:  #2E1515;
+  --danger-text:   #FF9494;
+  --purple:        #9B7BFF;
+  --purple-light:  #1E1730;
+  --purple-text:   #C4AAFF;
+}
+
+/* ─── Base ───────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Scrollbars ─────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
+
+/* ─── Radix overrides ────────────────────────────────────────── */
+[data-radix-popper-content-wrapper] { z-index: 200 !important; }
+
+/* ─── Recharts ───────────────────────────────────────────────── */
+.recharts-cartesian-axis-tick text { fill: var(--text-secondary) !important; font-size: 11px !important; }
+.recharts-cartesian-grid line { stroke: var(--border) !important; }
+.recharts-tooltip-wrapper { z-index: 50; }
+
+/* ─── Custom utilities ───────────────────────────────────────── */
+@layer utilities {
+  .scrollbar-none { scrollbar-width: none; }
+  .scrollbar-none::-webkit-scrollbar { display: none; }
+
+  .text-balance { text-wrap: balance; }
+
+  /* Monospace numbers */
+  .tabular-nums { font-variant-numeric: tabular-nums; }
+}
+
+/* ─── Component layer ────────────────────────────────────────── */
+@layer components {
+  /* Sidebar nav item */
+  .nav-item {
+    @apply flex items-center gap-2 px-4 h-8 text-sm font-normal text-ink-secondary cursor-pointer
+           border-l-2 border-transparent transition-all duration-150 select-none;
+  }
+  .nav-item:hover { @apply text-ink-primary bg-surface-hover; }
+  .nav-item.active {
+    @apply text-brand bg-brand-light border-brand font-medium;
+  }
+
+  /* Table */
+  .data-table thead th {
+    @apply bg-surface-secondary text-xs font-medium text-ink-secondary uppercase tracking-wider
+           h-9 px-4 text-left whitespace-nowrap border-b border-line;
+  }
+  .data-table tbody tr {
+    @apply border-b border-line h-11 transition-colors;
+  }
+  .data-table tbody tr:last-child { @apply border-b-0; }
+  .data-table tbody tr:hover { @apply bg-surface-hover; }
+  .data-table tbody td { @apply px-4 text-sm text-ink-primary; }
+
+  /* Card */
+  .card {
+    @apply bg-surface-primary border border-line rounded-md;
+  }
+  .card-hover {
+    @apply cursor-pointer transition-all duration-150;
+  }
+  .card-hover:hover { @apply border-line-strong bg-surface-hover; }
+
+  /* Badge */
+  .badge {
+    @apply inline-flex items-center h-5 px-2 rounded text-xs font-medium whitespace-nowrap;
+  }
+  .badge-approved  { @apply bg-positive-light text-positive-text; }
+  .badge-pending   { @apply bg-caution-light text-caution-text; }
+  .badge-declined  { @apply bg-destructive-light text-destructive-text; }
+  .badge-referred  { @apply bg-violet-light text-violet-text; }
+  .badge-processing{ @apply bg-brand-light text-brand-text; }
+  .badge-gray      { @apply bg-surface-tertiary text-ink-secondary; }
+
+  /* Banners */
+  .banner {
+    @apply flex items-start gap-3 p-3 rounded-md border text-sm;
+  }
+  .banner-info    { @apply bg-brand-light text-brand-text; border-color: color-mix(in srgb, var(--accent) 30%, transparent); }
+  .banner-success { @apply bg-positive-light text-positive-text; border-color: color-mix(in srgb, var(--success) 30%, transparent); }
+  .banner-warning { @apply bg-caution-light text-caution-text; border-color: color-mix(in srgb, var(--warning) 30%, transparent); }
+  .banner-danger  { @apply bg-destructive-light text-destructive-text; border-color: color-mix(in srgb, var(--danger) 30%, transparent); }
+  .banner-phi     {
+    @apply w-full bg-caution-light text-caution-text
+           px-4 py-2.5 text-xs font-medium flex items-center gap-2;
+    border-top: 1px solid color-mix(in srgb, var(--warning) 40%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--warning) 40%, transparent);
+  }
+}
+
+/* ─── Kanban drag-over indicator ─────────────────────────────── */
+.kanban-col[data-drag-over="true"] {
+  background: var(--accent-light);
+  border-color: var(--accent);
+}
+
+/* ─── Recharts tooltip ───────────────────────────────────────── */
+.custom-tooltip {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--text-primary);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
