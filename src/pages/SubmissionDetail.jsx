@@ -308,7 +308,7 @@ export default function SubmissionDetail() {
                 )}
                 {(sub.messages || []).map((msg, i) => (
                   <li key={msg.id} className="flex gap-3 pb-4 relative">
-                    {i < (sub.messages.length - 1) && (
+                    {i < ((sub.messages || []).length - 1) && (
                       <div className="absolute left-[7px] top-5 bottom-0 w-0.5 bg-line" />
                     )}
                     <div className={cn(

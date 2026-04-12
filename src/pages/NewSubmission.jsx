@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { CheckCircle2, AlertCircle, Loader2, ChevronDown, ChevronUp, Info } from 'lucide-react'
+import { CheckCircle2, AlertCircle, Loader2, ChevronDown, ChevronUp, Info, UploadCloud, X, FileText } from 'lucide-react'
+import { parseFile, getFileIcon, ACCEPTED_TYPES } from '@/engine/fileParser'
 import useAppStore from '@/store/useAppStore'
 import { callClaudeAPI } from '@/engine/ai'
 import { checkStateCompliance, validateAIRecommendation, checkCarrierAppetite, getAdverseActionDeadline } from '@/engine/compliance'
@@ -113,6 +114,10 @@ export default function NewSubmission() {
   const [mode, setMode] = useState('paste') // 'paste' | 'form'
   const [text, setText] = useState('')
   const [state, setState] = useState('')
+  const [uploadedFile, setUploadedFile] = useState(null)   // { name, ext, size }
+  const [parsing,      setParsing]      = useState(false)  // file parsing in progress
+  const [dragOver,     setDragOver]     = useState(false)
+  const fileInputRef = useRef(null)
   const [erisa, setErisa] = useState(false)
   const [running, setRunning] = useState(false)
   const [step, setStep]   = useState(-1)
@@ -140,6 +145,54 @@ export default function NewSubmission() {
   const industryAppetiteResult = industryForAppetite && carrier
     ? checkCarrierAppetite(industryForAppetite, carrier)
     : null
+
+  // ─── File upload handlers ───────────────────────────────────────────────────
+
+  const handleFile = useCallback(async (file) => {
+    if (!file) return
+    setParsing(true)
+    setUploadedFile(null)
+    setText('')
+    try {
+      const extracted = await parseFile(file)
+      if (!extracted.trim()) {
+        toast.error('Could not extract text from this file.', {
+          description: 'If it is a scanned document (image PDF), text extraction is not supported. Try copying the text manually.',
+        })
+        setParsing(false)
+        return
+      }
+      setText(extracted)
+      setUploadedFile({
+        name: file.name,
+        ext:  file.name.split('.').pop().toLowerCase(),
+        size: (file.size / 1024).toFixed(0) + ' KB',
+      })
+      toast.success(`"${file.name}" loaded`, { description: `${extracted.length.toLocaleString()} characters extracted.` })
+    } catch (err) {
+      toast.error('File parsing failed', { description: err.message })
+    } finally {
+      setParsing(false)
+    }
+  }, [])
+
+  function handleFileInputChange(e) {
+    handleFile(e.target.files?.[0])
+    e.target.value = ''
+  }
+
+  function handleDrop(e) {
+    e.preventDefault()
+    setDragOver(false)
+    handleFile(e.dataTransfer.files?.[0])
+  }
+
+  function clearFile() {
+    setUploadedFile(null)
+    setText('')
+  }
+
+  // ─── AI analysis ────────────────────────────────────────────────────────────
 
   async function handleAnalyze() {
     if (!apiKey) {
@@ -373,26 +426,97 @@ Special Circumstances: ${form.specialCircumstances}`
                 'flex-1 py-2 text-sm transition-colors',
                 mode === m ? 'bg-brand text-white' : 'text-ink-secondary hover:bg-surface-hover'
               )}>
-              {m === 'paste' ? 'Paste Submission' : 'Structured Form'}
+              {m === 'paste' ? 'Paste / Upload' : 'Structured Form'}
             </button>
           ))}
         </div>
 
-        {/* Paste mode */}
+        {/* Paste / Upload mode */}
         {mode === 'paste' && (
-          <div>
+          <div className="space-y-3">
+
+            {/* ── File upload zone ── */}
+            <div
+              onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={handleDrop}
+              onClick={() => !parsing && fileInputRef.current?.click()}
+              className={cn(
+                'relative border-2 border-dashed rounded-lg px-4 py-5 text-center cursor-pointer transition-all',
+                dragOver
+                  ? 'border-brand bg-brand-light'
+                  : 'border-line hover:border-brand/50 hover:bg-surface-hover'
+              )}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={ACCEPTED_TYPES}
+                onChange={handleFileInputChange}
+                className="hidden"
+              />
+
+              {parsing ? (
+                /* Parsing state */
+                <div className="flex flex-col items-center gap-2 py-1">
+                  <Loader2 size={22} className="text-brand animate-spin" />
+                  <span className="text-sm text-ink-secondary">Extracting text from file…</span>
+                </div>
+              ) : uploadedFile ? (
+                /* File loaded state */
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{getFileIcon(uploadedFile.ext)}</span>
+                    <div className="text-left">
+                      <div className="text-sm font-medium text-ink-primary truncate max-w-[260px]">{uploadedFile.name}</div>
+                      <div className="text-xs text-ink-tertiary">{uploadedFile.size} · text extracted successfully</div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); clearFile() }}
+                    className="w-7 h-7 flex items-center justify-center rounded-full text-ink-tertiary
+                               hover:bg-surface-tertiary hover:text-destructive transition-colors flex-shrink-0"
+                    title="Remove file"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ) : (
+                /* Idle state */
+                <div className="flex flex-col items-center gap-1.5 py-1">
+                  <UploadCloud size={22} className="text-ink-tertiary" />
+                  <div className="text-sm font-medium text-ink-primary">
+                    Drop a file here or <span className="text-brand">browse</span>
+                  </div>
+                  <div className="text-xs text-ink-tertiary">
+                    PDF, Word (.docx), Excel (.xlsx), CSV, or plain text
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Divider */}
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-px bg-line" />
+              <span className="text-xs text-ink-tertiary">or paste text directly</span>
+              <div className="flex-1 h-px bg-line" />
+            </div>
+
+            {/* ── Textarea ── */}
             <Textarea
               value={text}
-              onChange={(e) => setText(e.target.value)}
-              className="min-h-[220px] text-sm"
-              placeholder="Paste the broker's submission here. Include: employer name, industry, state, employee count, annual revenue, prior claims history, coverage types requested, and any additional risk factors. The AI will extract and structure all information automatically."
+              onChange={(e) => { setText(e.target.value); if (uploadedFile) setUploadedFile(null) }}
+              className="min-h-[180px] text-sm"
+              placeholder="Paste the broker's submission here — or drop a file above. Include: employer name, industry, state, employee count, annual revenue, prior claims history, coverage types requested, and any additional risk factors."
             />
-            <div className="flex gap-2 mt-2 flex-wrap">
+
+            {/* Example loaders */}
+            <div className="flex gap-2 flex-wrap">
               <span className="text-xs text-ink-tertiary self-center">Load example:</span>
               {Object.keys(EXAMPLES).map((ex) => (
                 <button
                   key={ex}
-                  onClick={() => setText(EXAMPLES[ex])}
+                  onClick={() => { setText(EXAMPLES[ex]); setUploadedFile(null) }}
                   className="px-2 py-1 text-xs bg-surface-secondary border border-line rounded
                              hover:border-brand hover:text-brand transition-colors"
                 >

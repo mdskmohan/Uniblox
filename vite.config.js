@@ -12,4 +12,8 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  optimizeDeps: {
+    // pdfjs-dist uses dynamic imports for its worker — tell Vite to include it
+    include: ['pdfjs-dist'],
+  },
 })
