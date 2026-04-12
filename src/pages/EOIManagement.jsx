@@ -74,7 +74,7 @@ export default function EOIManagement() {
           <KPICard label="Approval Rate"        value={`${approvalRate}%`} trendDir="neutral" />
         </KPIGrid>
 
-        <div className="border border-line rounded-md overflow-hidden">
+        <div className="border border-line rounded-md overflow-x-auto">
           <table className="w-full data-table">
             <thead>
               <tr>

@@ -70,9 +70,14 @@ export default function SettingsShell() {
       <aside className="fixed left-0 top-0 z-50 flex flex-col h-screen w-60
                         bg-surface-secondary border-r border-line overflow-y-auto flex-shrink-0">
 
-        {/* Logo + Back */}
-        <div className="px-4 py-3.5 border-b border-line flex-shrink-0">
-          <img src={logo} alt="Uniblox" className="h-8 w-auto object-contain mb-3" />
+        {/* Logo + Uniblox text (matches main Sidebar height) */}
+        <div className="flex items-center gap-2.5 px-4 h-topnav border-b border-line flex-shrink-0">
+          <img src={logo} alt="Uniblox" className="h-7 w-auto object-contain flex-shrink-0" />
+          <span className="text-sm font-semibold text-ink-primary tracking-tight">Uniblox</span>
+        </div>
+
+        {/* Back button */}
+        <div className="px-4 py-3 border-b border-line flex-shrink-0">
           <button
             onClick={() => navigate(-1)}
             className="flex items-center gap-2 text-sm text-ink-secondary hover:text-ink-primary

@@ -133,7 +133,7 @@ export default function CensusUpload() {
 
       {/* Required columns */}
       {!fileLoaded && (
-        <div className="border border-line rounded-md overflow-hidden mb-5">
+        <div className="border border-line rounded-md overflow-x-auto mb-5">
           <div className="px-4 py-3 bg-surface-secondary border-b border-line text-sm font-medium">
             Required & Optional Columns
           </div>
@@ -212,7 +212,7 @@ export default function CensusUpload() {
           </div>
 
           {/* Error detail table */}
-          <div className="border border-line rounded-md overflow-hidden">
+          <div className="border border-line rounded-md overflow-x-auto">
             <div className="px-4 py-3 bg-surface-secondary border-b border-line text-sm font-medium flex items-center gap-2">
               <AlertCircle size={14} className="text-caution" /> Error Detail (showing 5 of 16)
             </div>
@@ -234,7 +234,7 @@ export default function CensusUpload() {
           </div>
 
           {/* Data preview */}
-          <div className="border border-line rounded-md overflow-hidden">
+          <div className="border border-line rounded-md overflow-x-auto">
             <div className="px-4 py-3 bg-surface-secondary border-b border-line text-sm font-medium">
               Data Preview (first 10 rows)
             </div>

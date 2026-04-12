@@ -103,7 +103,7 @@ export default function AuditLog() {
       </div>
 
       {/* Table */}
-      <div className="border border-line rounded-md overflow-hidden">
+      <div className="border border-line rounded-md overflow-x-auto">
         <table className="w-full data-table">
           <thead>
             <tr>

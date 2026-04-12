@@ -14,7 +14,7 @@ export default function DecisionsArchive() {
   return (
     <div>
       <PageHeader title="Decisions Archive" subtitle={`${decided.length} decided submissions`} />
-      <div className="border border-line rounded-md overflow-hidden">
+      <div className="border border-line rounded-md overflow-x-auto">
         <table className="w-full data-table">
           <thead>
             <tr>

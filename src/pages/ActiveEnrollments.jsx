@@ -27,7 +27,7 @@ export default function ActiveEnrollments() {
         <KPICard label="EOI Pending Total"         value={eoiTotal}                             trendDir="neutral" />
       </KPIGrid>
 
-      <div className="border border-line rounded-md overflow-hidden">
+      <div className="border border-line rounded-md overflow-x-auto">
         <table className="w-full data-table">
           <thead>
             <tr>

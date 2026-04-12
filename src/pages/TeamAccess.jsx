@@ -182,7 +182,7 @@ export default function TeamAccess() {
           </div>
 
           {/* Table */}
-          <div className="card overflow-hidden">
+          <div className="card overflow-x-auto">
             <table className="w-full data-table">
               <thead>
                 <tr>

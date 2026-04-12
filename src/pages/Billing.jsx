@@ -212,7 +212,7 @@ export default function Billing() {
 
       {/* ── INVOICES ── */}
       {billingTab === 'invoices' && (
-        <div className="card overflow-hidden">
+        <div className="card overflow-x-auto">
           <table className="w-full data-table">
             <thead>
               <tr>

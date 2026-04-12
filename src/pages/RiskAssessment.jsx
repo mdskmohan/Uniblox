@@ -25,7 +25,7 @@ export default function RiskAssessment() {
         <KPICard label="Low Risk (0–39)"     value={low}     trendDir="neutral" />
       </KPIGrid>
 
-      <div className="border border-line rounded-md overflow-hidden">
+      <div className="border border-line rounded-md overflow-x-auto">
         <table className="w-full data-table">
           <thead>
             <tr>

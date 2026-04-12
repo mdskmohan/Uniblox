@@ -153,7 +153,7 @@ export default function Submissions() {
       </div>
 
       {/* Table */}
-      <div className="border border-line rounded-md overflow-hidden">
+      <div className="border border-line rounded-md overflow-x-auto">
         {paged.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="text-4xl mb-3 opacity-30">📋</div>

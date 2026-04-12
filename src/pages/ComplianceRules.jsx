@@ -25,7 +25,7 @@ export default function ComplianceRules() {
         They cannot be overridden by individual underwriters — only compliance officers can modify these settings.
       </Banner>
 
-      <div className="card overflow-hidden">
+      <div className="card overflow-x-auto">
         <table className="w-full data-table">
           <thead>
             <tr><th>Category</th><th>Rule</th><th>Status</th><th>Reference</th></tr>
