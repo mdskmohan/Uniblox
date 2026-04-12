@@ -52,6 +52,9 @@ export default function AISettings() {
   const [connStatus, setConnStatus] = useState(null)
   const [testing,    setTesting]    = useState(false)
 
+  const [promptText,  setPromptText]  = useState(BASE_PROMPT)
+  const [promptDirty, setPromptDirty] = useState(false)
+
   const [settings, setSettings] = useState({
     generateRationale:    true,
     showSubScores:        true,
@@ -204,15 +207,35 @@ export default function AISettings() {
         </div>
       </div>
 
-      {/* System prompt viewer */}
+      {/* System prompt editor */}
       <div className="card p-5">
-        <div className="font-semibold mb-3">System Prompt (Read-Only)</div>
-        <div className="text-xs text-ink-secondary mb-3">
-          This is the base system prompt used for all AI calls. Carrier rules and state rules are injected at the marked injection points.
+        <div className="flex items-center justify-between mb-1">
+          <div className="font-semibold">System Prompt</div>
+          {promptDirty && <span className="text-xs text-caution-text">Unsaved changes</span>}
         </div>
-        <pre className="bg-surface-secondary border border-line rounded p-3 text-xs font-mono text-ink-secondary overflow-x-auto whitespace-pre-wrap max-h-64">
-          {BASE_PROMPT}
-        </pre>
+        <div className="text-xs text-ink-secondary mb-3">
+          Base prompt used for all AI calls. Carrier and state rules are injected at the{' '}
+          <span className="font-mono bg-surface-secondary px-1 rounded">[INJECTION POINT]</span> markers below.
+          Changes take effect immediately on the next AI call.
+        </div>
+        <textarea
+          value={promptText}
+          onChange={(e) => { setPromptText(e.target.value); setPromptDirty(true) }}
+          rows={14}
+          className="w-full text-xs font-mono bg-surface-secondary border border-line rounded p-3
+                     text-ink-primary resize-y focus:outline-none focus:border-brand transition-colors"
+          spellCheck={false}
+        />
+        <div className="flex items-center gap-2 mt-3">
+          <Button size="sm" onClick={() => { toast.success('System prompt saved'); setPromptDirty(false) }}
+            disabled={!promptDirty}>
+            Save Prompt
+          </Button>
+          <Button size="sm" variant="secondary"
+            onClick={() => { setPromptText(BASE_PROMPT); setPromptDirty(false); toast.info('Reset to default') }}>
+            Reset to Default
+          </Button>
+        </div>
       </div>
 
       <Button onClick={() => toast.success('AI settings saved')}>Save All Settings</Button>

@@ -47,6 +47,9 @@ import ComplianceRules   from '@/pages/ComplianceRules'
 import StateGuidelines   from '@/pages/StateGuidelines'
 import TeamAccess        from '@/pages/TeamAccess'
 import Profile           from '@/pages/Profile'
+import Preferences       from '@/pages/Preferences'
+import Notifications     from '@/pages/Notifications'
+import Security          from '@/pages/Security'
 import Billing           from '@/pages/Billing'
 
 export default function App() {
@@ -84,9 +87,12 @@ export default function App() {
         {/* ── Settings (own shell, no main sidebar) ── */}
         <Route path="/settings" element={<SettingsShell />}>
           <Route index element={<Navigate to="/settings/profile" replace />} />
-          <Route path="profile"     element={<Profile />} />
-          <Route path="team"        element={<TeamAccess />} />
-          <Route path="billing"     element={<Billing />} />
+          <Route path="profile"        element={<Profile />} />
+          <Route path="preferences"    element={<Preferences />} />
+          <Route path="notifications"  element={<Notifications />} />
+          <Route path="security"       element={<Security />} />
+          <Route path="team"           element={<TeamAccess />} />
+          <Route path="billing"        element={<Billing />} />
           <Route path="carrier"     element={<CarrierConfig />} />
           <Route path="ai"          element={<AISettings />} />
           <Route path="compliance"  element={<ComplianceRules />} />

@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import {
-  ArrowLeft, User, Settings, Cpu, ShieldCheck, MapPin, Users,
+  ArrowLeft, User, Globe, Bell, Shield, Cpu, ShieldCheck, MapPin, Users,
   CreditCard, Building2
 } from 'lucide-react'
 import useAppStore from '@/store/useAppStore'
@@ -12,21 +12,24 @@ const NAV = [
   {
     section: 'Account',
     items: [
-      { to: '/settings/profile', label: 'Profile',         icon: User },
+      { to: '/settings/profile',       label: 'Profile',       icon: User },
+      { to: '/settings/preferences',   label: 'Preferences',   icon: Globe },
+      { to: '/settings/notifications', label: 'Notifications', icon: Bell },
+      { to: '/settings/security',      label: 'Security',      icon: Shield },
     ],
   },
   {
     section: 'Organization',
     items: [
-      { to: '/settings/team',    label: 'Team & Access',   icon: Users },
-      { to: '/settings/billing', label: 'Billing & Plan',  icon: CreditCard },
+      { to: '/settings/team',    label: 'Team & Access',  icon: Users },
+      { to: '/settings/billing', label: 'Billing & Plan', icon: CreditCard },
     ],
   },
   {
     section: 'Platform',
     items: [
-      { to: '/settings/carrier',    label: 'Carrier Config',  icon: Building2 },
-      { to: '/settings/ai',         label: 'AI Settings',     icon: Cpu },
+      { to: '/settings/carrier',    label: 'Carrier Config',   icon: Building2 },
+      { to: '/settings/ai',         label: 'AI Settings',      icon: Cpu },
       { to: '/settings/compliance', label: 'Compliance Rules', icon: ShieldCheck },
       { to: '/settings/states',     label: 'State Guidelines', icon: MapPin },
     ],

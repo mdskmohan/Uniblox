@@ -6,11 +6,24 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 
+// States with full regulatory detail
 const FEATURED_STATES = ['CA','NY','IL','TX','FL','WA','MA','NJ','PA','GA']
 
-const ALL_STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA',
-  'KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY',
-  'NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC']
+const STATE_NAMES = {
+  AL:'Alabama', AK:'Alaska', AZ:'Arizona', AR:'Arkansas', CA:'California',
+  CO:'Colorado', CT:'Connecticut', DE:'Delaware', FL:'Florida', GA:'Georgia',
+  HI:'Hawaii', ID:'Idaho', IL:'Illinois', IN:'Indiana', IA:'Iowa',
+  KS:'Kansas', KY:'Kentucky', LA:'Louisiana', ME:'Maine', MD:'Maryland',
+  MA:'Massachusetts', MI:'Michigan', MN:'Minnesota', MS:'Mississippi', MO:'Missouri',
+  MT:'Montana', NE:'Nebraska', NV:'Nevada', NH:'New Hampshire', NJ:'New Jersey',
+  NM:'New Mexico', NY:'New York', NC:'North Carolina', ND:'North Dakota',
+  OH:'Ohio', OK:'Oklahoma', OR:'Oregon', PA:'Pennsylvania', RI:'Rhode Island',
+  SC:'South Carolina', SD:'South Dakota', TN:'Tennessee', TX:'Texas', UT:'Utah',
+  VT:'Vermont', VA:'Virginia', WA:'Washington', WV:'West Virginia', WI:'Wisconsin',
+  WY:'Wyoming', DC:'Washington D.C.',
+}
+
+const ALL_STATES = Object.keys(STATE_NAMES)
 
 export default function StateGuidelines() {
   const [search,   setSearch]   = useState('')
@@ -18,8 +31,9 @@ export default function StateGuidelines() {
 
   const rules = getStateRules(selected)
 
+  const q = search.trim().toUpperCase()
   const filtered = ALL_STATES.filter((s) =>
-    !search || s.includes(search.toUpperCase())
+    !q || s.includes(q) || STATE_NAMES[s]?.toUpperCase().includes(search.trim().toUpperCase())
   )
 
   const featured = filtered.filter((s) => FEATURED_STATES.includes(s))
@@ -28,10 +42,10 @@ export default function StateGuidelines() {
   return (
     <div className="flex gap-5">
       {/* Left: state selector */}
-      <div className="w-52 flex-shrink-0">
+      <div className="w-56 flex-shrink-0">
         <PageHeader title="State Guidelines" className="mb-3" />
         <Input
-          placeholder="Search states..."
+          placeholder="Search states…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="mb-3"
@@ -39,21 +53,26 @@ export default function StateGuidelines() {
 
         {featured.length > 0 && (
           <>
-            <div className="text-[11px] font-semibold text-ink-tertiary uppercase tracking-wider px-1 mb-1">Full Detail</div>
+            <div className="text-[11px] font-semibold text-ink-tertiary uppercase tracking-wider px-1 mb-1">
+              Full Detail
+            </div>
             {featured.map((s) => (
-              <StateButton key={s} state={s} selected={selected} onClick={setSelected} />
+              <StateButton key={s} state={s} name={STATE_NAMES[s]} selected={selected} onClick={setSelected} />
             ))}
           </>
         )}
 
         {others.length > 0 && (
           <>
-            <div className="text-[11px] font-semibold text-ink-tertiary uppercase tracking-wider px-1 mb-1 mt-3">NAIC Model Rules</div>
+            <div className="text-[11px] font-semibold text-ink-tertiary uppercase tracking-wider px-1 mb-1 mt-3">
+              All States
+            </div>
             <div className="flex flex-wrap gap-1">
               {others.map((s) => (
                 <button
                   key={s}
                   onClick={() => setSelected(s)}
+                  title={STATE_NAMES[s]}
                   className={cn(
                     'px-2 py-1 text-xs rounded border transition-colors',
                     s === selected
@@ -72,22 +91,27 @@ export default function StateGuidelines() {
       {/* Right: state detail */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-3 mb-5">
-          <div className="w-10 h-10 rounded-lg bg-brand/10 flex items-center justify-center text-lg font-bold text-brand">
+          <div className="w-10 h-10 rounded-lg bg-brand/10 flex items-center justify-center text-sm font-bold text-brand">
             {selected}
           </div>
           <div>
-            <h2 className="text-xl font-semibold text-ink-primary">{rules.stateName || selected}</h2>
-            <div className="text-sm text-ink-secondary">{rules.insuranceDepartmentName || 'State Department of Insurance'}</div>
+            <h2 className="text-xl font-semibold text-ink-primary">
+              {STATE_NAMES[selected] || rules.stateName || selected}
+            </h2>
+            <div className="text-sm text-ink-secondary">
+              {rules.insuranceDepartmentName || `${STATE_NAMES[selected] || selected} Department of Insurance`}
+            </div>
           </div>
           {FEATURED_STATES.includes(selected)
             ? <Badge variant="info" className="ml-auto">Full Detail</Badge>
-            : <Badge variant="gray" className="ml-auto">NAIC Model Rules</Badge>
+            : <Badge variant="gray" className="ml-auto">Standard Rules</Badge>
           }
         </div>
 
         {!FEATURED_STATES.includes(selected) && (
           <Banner variant="info" className="mb-4">
-            Standard NAIC Model Rules apply for {selected}. Full regulatory detail available for CA, NY, IL, TX, FL, WA, MA, NJ, PA, GA.
+            Standard ACA / federal baseline rules apply for {STATE_NAMES[selected] || selected}.
+            State-specific regulatory detail is available for CA, NY, IL, TX, FL, WA, MA, NJ, PA, and GA.
           </Banner>
         )}
 
@@ -113,9 +137,9 @@ export default function StateGuidelines() {
           {/* Adverse action */}
           <DetailCard title="Adverse Action Requirements">
             {[
-              ['Notice Deadline',      `${rules.adverseActionNoticeDays} calendar days`],
-              ['Notice Format',        rules.adverseActionNoticeFormat?.replace(/_/g, ' ')],
-              ['Required Language',    rules.adverseActionRequiredLanguage],
+              ['Notice Deadline',   `${rules.adverseActionNoticeDays} calendar days`],
+              ['Notice Format',     rules.adverseActionNoticeFormat?.replace(/_/g, ' ')],
+              ['Required Language', rules.adverseActionRequiredLanguage],
             ]}
           </DetailCard>
 
@@ -153,9 +177,18 @@ export default function StateGuidelines() {
         {/* Regulatory contact */}
         <div className="card p-4 mt-4">
           <div className="font-semibold text-sm mb-2">Regulatory Contact</div>
-          <div className="text-sm text-ink-secondary">{rules.insuranceDepartmentName || 'State Department of Insurance'}</div>
+          <div className="text-sm text-ink-secondary">
+            {rules.insuranceDepartmentName || `${STATE_NAMES[selected] || selected} Department of Insurance`}
+          </div>
           {rules.insuranceDepartmentWebsite && (
-            <div className="text-xs text-brand mt-1">{rules.insuranceDepartmentWebsite}</div>
+            <a
+              href={rules.insuranceDepartmentWebsite}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-brand mt-1 block hover:underline"
+            >
+              {rules.insuranceDepartmentWebsite}
+            </a>
           )}
           <div className="text-xs text-ink-tertiary mt-2">
             Last verified: January 2024 · Always verify with current regulatory sources before relying on this information.
@@ -166,18 +199,19 @@ export default function StateGuidelines() {
   )
 }
 
-function StateButton({ state, selected, onClick }) {
+function StateButton({ state, name, selected, onClick }) {
   return (
     <button
       onClick={() => onClick(state)}
       className={cn(
-        'w-full text-left px-3 py-2 rounded text-sm border transition-colors mb-0.5',
+        'w-full text-left px-3 py-2 rounded text-sm border transition-colors mb-0.5 flex items-center gap-2',
         state === selected
           ? 'bg-brand-light border-brand text-brand font-medium'
           : 'border-transparent text-ink-secondary hover:bg-surface-hover hover:text-ink-primary'
       )}
     >
-      {state}
+      <span className="font-mono text-[11px] text-ink-tertiary flex-shrink-0 w-6">{state}</span>
+      <span className="truncate">{name}</span>
     </button>
   )
 }
