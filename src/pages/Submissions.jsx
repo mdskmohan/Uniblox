@@ -237,15 +237,7 @@ export default function Submissions() {
                     }
                   </td>
                   <td onClick={(e) => e.stopPropagation()}>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost" size="sm"
-                        onClick={() => navigate(`/submissions/${sub.id}`)}
-                      >
-                        View
-                      </Button>
-                      <RowMenu sub={sub} />
-                    </div>
+                    <RowMenu sub={sub} />
                   </td>
                 </tr>
               ))}

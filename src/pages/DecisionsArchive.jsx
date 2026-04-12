@@ -3,7 +3,6 @@ import useAppStore from '@/store/useAppStore'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { StatusBadge } from '@/components/ui/badge'
 import { RiskScoreCell } from '@/components/shared/RiskScore'
-import { Button } from '@/components/ui/button'
 import { formatDate } from '@/lib/utils'
 
 export default function DecisionsArchive() {
@@ -19,7 +18,7 @@ export default function DecisionsArchive() {
           <thead>
             <tr>
               <th>ID</th><th>Employer</th><th>Industry</th><th>State</th>
-              <th>Risk</th><th>Confidence</th><th>Decision</th><th>Submitted</th><th></th>
+              <th>Risk</th><th>Confidence</th><th>Decision</th><th>Submitted</th>
             </tr>
           </thead>
           <tbody>
@@ -33,9 +32,6 @@ export default function DecisionsArchive() {
                 <td className="text-sm text-ink-secondary">{sub.confidenceLevel}%</td>
                 <td><StatusBadge status={sub.status} /></td>
                 <td className="text-xs text-ink-secondary">{formatDate(sub.submittedAt, { relative: true })}</td>
-                <td onClick={(e) => e.stopPropagation()}>
-                  <Button variant="ghost" size="sm" onClick={() => navigate(`/submissions/${sub.id}`)}>View</Button>
-                </td>
               </tr>
             ))}
           </tbody>
