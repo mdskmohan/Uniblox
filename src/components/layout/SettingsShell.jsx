@@ -1,7 +1,7 @@
 import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import {
-  ArrowLeft, Globe, Bell, Shield, Cpu, ShieldCheck, MapPin, Users,
+  ArrowLeft, User, Globe, Bell, Shield, Cpu, ShieldCheck, MapPin, Users,
   CreditCard, Building2
 } from 'lucide-react'
 import useAppStore from '@/store/useAppStore'
@@ -12,6 +12,7 @@ const NAV = [
   {
     section: 'Account',
     items: [
+      { to: '/settings/profile',       label: 'Profile',       icon: User },
       { to: '/settings/preferences',   label: 'Preferences',   icon: Globe },
       { to: '/settings/notifications', label: 'Notifications', icon: Bell },
       { to: '/settings/security',      label: 'Security',      icon: Shield },
@@ -93,21 +94,17 @@ export default function SettingsShell() {
           ))}
         </nav>
 
-        {/* User info — clicking navigates to profile */}
-        <button
-          onClick={() => navigate('/settings/profile')}
-          className="border-t border-line p-3 flex items-center gap-2.5 flex-shrink-0
-                     hover:bg-surface-hover transition-colors text-left"
-        >
+        {/* User info */}
+        <div className="border-t border-line p-3 flex items-center gap-2.5 flex-shrink-0">
           <div className="w-8 h-8 rounded-full bg-brand flex items-center justify-center
                           text-white text-xs font-semibold flex-shrink-0">
             {currentUser.initials}
           </div>
           <div className="min-w-0">
             <div className="text-xs font-medium text-ink-primary truncate">{currentUser.name}</div>
-            <div className="text-[10px] text-ink-tertiary truncate">View Profile</div>
+            <div className="text-[10px] text-ink-tertiary truncate">{currentUser.role}</div>
           </div>
-        </button>
+        </div>
       </aside>
 
       {/* Main content */}
