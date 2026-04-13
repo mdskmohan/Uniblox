@@ -1204,10 +1204,4 @@ Most of the tool logic already exists in the prototype — it just isn't yet wra
 
 ---
 
-## License
-
-MIT
-
----
-
 *All carrier names, submission data, and employee records are synthetic and used for demonstration purposes only. No real insurance decisions are made by this software.*
