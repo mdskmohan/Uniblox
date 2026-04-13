@@ -14,43 +14,24 @@
 
 ## Table of Contents
 
-**Product**
-- [The Problem We're Solving](#the-problem-were-solving)
-- [What Uniblox Does](#what-uniblox-does)
-- [Platform Overview](#platform-overview)
-
-**Getting Started**
-- [Prerequisites & Installation](#getting-started)
-- [Connect the AI](#connect-the-ai)
-
-**Features**
-- [New Submission + AI Risk Assessment](#1-new-submission--ai-risk-assessment)
-- [Compliance Engine](#2-compliance-engine)
-- [Carrier Configuration](#3-carrier-configuration)
-- [EOI Management](#4-eoi-management-evidence-of-insurability)
-- [Team & Access Control](#5-team--access-control)
-- [AI Assistant (Copilot)](#6-ai-assistant-copilot)
-- [Analytics Suite](#7-analytics-suite)
-
-**Technical Architecture**
-- [System Architecture](#system-architecture)
-- [AI Architecture](#ai-architecture)
-- [Data Model](#data-model)
-- [Application Routes](#application-routes)
-
-**AI Safety**
-- [AI Guardrails](#ai-guardrails)
-
-**Engineering Reference**
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Design System](#design-system)
-- [Key Architectural Decisions](#key-architectural-decisions)
-
-**Roadmap**
-- [Production Readiness](#production-readiness)
-- [Prototype → Production Roadmap](#prototype--production-roadmap)
-- [Future State: Agentic Architecture](#future-state-agentic-architecture)
+| # | Section | For |
+|---|---------|-----|
+| 1 | [The Problem](#the-problem-were-solving) | Everyone |
+| 2 | [What Uniblox Does](#what-uniblox-does) | Everyone |
+| 3 | [Competitive Landscape](#competitive-landscape) | Product / Business |
+| 4 | [Getting Started](#getting-started) | Developers |
+| 5 | [Platform Overview](#platform-overview) | Product / Business |
+| 6 | [Features](#features) | Product / Business |
+| 7 | [System Architecture](#system-architecture) | Engineering |
+| 8 | [AI Architecture](#ai-architecture) | Engineering / AI |
+| 9 | [Data Model](#data-model) | Engineering |
+| 10 | [Application Routes](#application-routes) | Engineering |
+| 11 | [AI Guardrails](#ai-guardrails) | Engineering / AI / Legal |
+| 12 | [Tech Stack & Project Structure](#tech-stack) | Engineering |
+| 13 | [Key Architectural Decisions](#key-architectural-decisions) | Engineering |
+| 14 | [Production Readiness](#production-readiness) | Product / Engineering |
+| 15 | [Prototype → Production Roadmap](#prototype--production-roadmap) | Product / Engineering |
+| 16 | [Future State: Agents](#future-state-agentic-architecture) | Product / AI |
 
 ---
 
@@ -112,6 +93,62 @@ Uniblox is organized into five operational modules, each mapping to a real workf
 │  Carrier Config · AI Settings · Compliance Rules · State Guide  │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## Competitive Landscape
+
+Uniblox was built by studying the direct competitors in the AI-assisted insurance underwriting and insurtech workflow space. This prototype draws inspiration from their product approaches and improves on their specific gaps.
+
+### Direct Competitors
+
+**Gradient AI**
+The closest direct competitor. Offers AI-powered group benefits underwriting with risk scoring and carrier integration. Their focus is on predictive analytics and historical claims data modeling.
+- *What they do well:* Deep ML models trained on large historical claims datasets
+- *What we improve on:* Their product requires significant implementation time and is opaque to underwriters. Uniblox puts the reasoning on screen — underwriters see exactly why the AI scored a submission the way it did, not just a number
+- *Key difference:* Uniblox is explanation-first. Every recommendation comes with reasoning points, compliance notes, and carrier appetite context, not just a score
+
+**Majesco**
+Enterprise insurance core system + AI layer. Covers P&C and life/benefits with a workflow automation focus. Very established, very large.
+- *What they do well:* End-to-end carrier system of record, deep integration with existing workflows
+- *What we improve on:* Majesco is an enterprise implementation that takes months to deploy. Uniblox is designed to be usable on day one — paste a submission and get a scored, compliance-checked result in seconds
+- *Key difference:* Speed to value. Uniblox can run alongside an existing system as an underwriting co-pilot without replacing it
+
+**EbixExchange / Ipipeline**
+Broker-to-carrier submission routing platforms that digitize the submission intake process. They move PDFs faster but don't add intelligence.
+- *What they do well:* Standardized submission formats, broker portal integrations, carrier connectivity
+- *What we improve on:* They solve the routing problem, not the decision problem. Uniblox starts where they end — after the submission is received — and applies AI to the decision
+- *Key difference:* We're not a submission router. We're a decision engine
+
+**Applied Epic / Vertafore AMS360**
+Agency Management Systems used by brokers to manage submissions and client relationships. Not underwriting tools, but they're where submissions originate.
+- *What they do well:* Broker-side workflow, CRM, commission tracking
+- *What we improve on:* These systems have no underwriting intelligence at all — they're on the broker's side of the table. Uniblox sits on the carrier/MGA side and is the natural integration target for data coming out of AMS systems
+- *Key difference:* Complementary, not competitive — Uniblox would integrate as a downstream decision layer for submissions originating in these systems
+
+### Where Uniblox Sits
+
+```
+  BROKER SIDE                    CARRIER / MGA SIDE
+  ────────────────────           ────────────────────────────────────
+  AMS360 / Applied Epic          Majesco / Duck Creek (system of record)
+  Ipipeline / EbixExchange  ───► [UNIBLOX — decision layer]  ───► Carrier system
+  (submission routing)           Gradient AI (competing here)
+```
+
+### What Makes Uniblox Different
+
+| Capability | Gradient AI | Majesco | Ipipeline | Uniblox |
+|-----------|-------------|---------|-----------|---------|
+| AI risk scoring | ✓ | Partial | ✗ | ✓ |
+| Explainable reasoning | Partial | ✗ | ✗ | ✓ |
+| State compliance engine | ✗ | ✓ (complex) | ✗ | ✓ |
+| Editable AI prompt per carrier | ✗ | ✗ | ✗ | ✓ |
+| Carrier appetite grid | Partial | ✓ | ✗ | ✓ |
+| In-browser file parsing | ✗ | ✗ | ✗ | ✓ |
+| AI copilot for underwriters | ✗ | ✗ | ✗ | ✓ |
+| Day-one usability | ✗ | ✗ (months) | Partial | ✓ |
+| Agentic roadmap | Unknown | Unknown | ✗ | Planned |
 
 ---
 
