@@ -70,6 +70,87 @@ const TABS = [
   { id: 'api',     label: 'API Keys',         icon: Key },
 ]
 
+// ── Role Permissions Modal ─────────────────────────────────────────────────────
+function RolePermissionsModal({ roleKey, role, currentPerms, onSave, onClose }) {
+  const [localPerms, setLocalPerms] = useState([...currentPerms])
+  const groups = [...new Set(PERMISSION_LIST.map((p) => p.group))]
+
+  function toggle(key) {
+    setLocalPerms((p) => p.includes(key) ? p.filter((k) => k !== key) : [...p, key])
+  }
+
+  const allKeys = PERMISSION_LIST.map((p) => p.key)
+  const allChecked = allKeys.every((k) => localPerms.includes(k))
+
+  function toggleAll() {
+    setLocalPerms(allChecked ? [] : [...allKeys])
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+      <div className="bg-surface-primary rounded-xl border border-line shadow-2xl w-full max-w-md
+                      flex flex-col animate-fadeIn" style={{ maxHeight: '85vh' }}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-line flex-shrink-0">
+          <div>
+            <div className="flex items-center gap-2 mb-0.5">
+              <Badge variant={role.color}>{role.label}</Badge>
+              {role.system && <span className="text-[11px] text-ink-tertiary">System role</span>}
+            </div>
+            <div className="text-xs text-ink-secondary mt-0.5">{role.desc}</div>
+          </div>
+          <button onClick={onClose} className="text-ink-tertiary hover:text-ink-primary flex-shrink-0 ml-4">
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Select all */}
+        <div className="flex items-center justify-between px-5 py-2.5 border-b border-line bg-surface-secondary flex-shrink-0">
+          <span className="text-xs text-ink-secondary">
+            <strong className="text-ink-primary">{localPerms.length}</strong> of {PERMISSION_LIST.length} permissions selected
+          </span>
+          <button onClick={toggleAll} className="text-xs text-brand hover:underline font-medium">
+            {allChecked ? 'Deselect all' : 'Select all'}
+          </button>
+        </div>
+
+        {/* Permission checkboxes */}
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+          {groups.map((group) => (
+            <div key={group}>
+              <div className="text-[11px] font-semibold text-ink-tertiary uppercase tracking-wider mb-2.5">
+                {group}
+              </div>
+              <div className="space-y-2">
+                {PERMISSION_LIST.filter((p) => p.group === group).map((p) => (
+                  <label key={p.key} className="flex items-center gap-3 cursor-pointer group py-1">
+                    <input
+                      type="checkbox"
+                      checked={localPerms.includes(p.key)}
+                      onChange={() => toggle(p.key)}
+                      className="accent-brand w-4 h-4 flex-shrink-0"
+                    />
+                    <span className="text-sm text-ink-primary group-hover:text-brand transition-colors">
+                      {p.label}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-line flex-shrink-0">
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button onClick={() => { onSave(roleKey, localPerms); onClose() }}>Save Changes</Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Create Role Modal ──────────────────────────────────────────────────────────
 function CreateRoleModal({ roles, onSave, onClose }) {
   const [name, setName]       = useState('')
@@ -168,11 +249,10 @@ export default function TeamAccess() {
   const [sso,        setSso]        = useState({ enabled: false, provider: 'okta', domain: '', entityId: '', acsUrl: '' })
 
   // Roles state — built-in + custom
-  const [roles,        setRoles]        = useState(BUILT_IN_ROLES)
-  const [permissions,  setPermissions]  = useState(DEFAULT_PERMISSIONS)
-  const [createOpen,   setCreateOpen]   = useState(false)
-  const [selectedRole, setSelectedRole] = useState('admin')
-  const [permsDirty,   setPermsDirty]   = useState(false)
+  const [roles,         setRoles]         = useState(BUILT_IN_ROLES)
+  const [permissions,   setPermissions]   = useState(DEFAULT_PERMISSIONS)
+  const [createOpen,    setCreateOpen]    = useState(false)
+  const [roleModalOpen, setRoleModalOpen] = useState(null) // roleKey or null
 
   const filtered = team.filter((m) =>
     !search ||
@@ -211,13 +291,9 @@ export default function TeamAccess() {
   }
 
   // ── Roles ──
-  function togglePermission(roleKey, permKey) {
-    setPermissions((prev) => {
-      const curr = prev[roleKey] || []
-      const next = curr.includes(permKey) ? curr.filter((k) => k !== permKey) : [...curr, permKey]
-      return { ...prev, [roleKey]: next }
-    })
-    setPermsDirty(true)
+  function handleSavePermissions(roleKey, newPerms) {
+    setPermissions((p) => ({ ...p, [roleKey]: newPerms }))
+    toast.success(`Permissions saved for ${roles[roleKey]?.label}`)
   }
 
   function handleCreateRole({ id, label, desc, permissions: perms, color, system }) {
@@ -391,97 +467,67 @@ export default function TeamAccess() {
 
       {/* ── ROLES & PERMISSIONS ── */}
       {tab === 'roles' && (
-        <div className="flex gap-5 min-h-0">
-
-          {/* Left: role list */}
-          <div className="w-56 flex-shrink-0 flex flex-col gap-2">
+        <>
+          <div className="grid grid-cols-3 gap-3">
             {Object.entries(roles).map(([key, r]) => {
               const count = (permissions[key] || []).length
               return (
                 <button
                   key={key}
-                  onClick={() => { setSelectedRole(key); setPermsDirty(false) }}
-                  className={cn(
-                    'w-full text-left p-3 rounded-lg border transition-colors',
-                    selectedRole === key
-                      ? 'bg-brand-light border-brand'
-                      : 'bg-surface-primary border-line hover:border-brand/40 hover:bg-surface-hover'
-                  )}
+                  onClick={() => setRoleModalOpen(key)}
+                  className="text-left p-4 rounded-xl border border-line bg-surface-primary
+                             hover:border-brand hover:bg-brand-light/20 transition-all group"
                 >
-                  <div className="flex items-center justify-between gap-1 mb-1">
-                    <Badge variant={r.color} className="text-[10px]">{r.label}</Badge>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <Badge variant={r.color} className="text-[11px]">{r.label}</Badge>
                     {!r.system && (
                       <button
                         onClick={(e) => { e.stopPropagation(); handleDeleteRole(key) }}
-                        className="text-ink-tertiary hover:text-destructive transition-colors"
+                        className="text-ink-tertiary hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
                       >
-                        <Trash2 size={11} />
+                        <Trash2 size={12} />
                       </button>
                     )}
                   </div>
-                  <div className="text-[10px] text-ink-tertiary mt-1">
-                    {count} of {PERMISSION_LIST.length} permissions
+                  <div className="text-xs text-ink-secondary mb-3 leading-relaxed line-clamp-2">
+                    {r.desc}
+                  </div>
+                  <div className="text-[11px] text-ink-tertiary">
+                    <span className="font-semibold text-ink-primary">{count}</span>
+                    {' '}of {PERMISSION_LIST.length} permissions
                   </div>
                 </button>
               )
             })}
-            <Button size="sm" variant="secondary" className="mt-1" onClick={() => setCreateOpen(true)}>
-              <Plus size={13} /> Create Role
-            </Button>
+
+            {/* Create custom role — dashed card */}
+            <button
+              onClick={() => setCreateOpen(true)}
+              className="p-4 rounded-xl border-2 border-dashed border-line
+                         hover:border-brand hover:bg-brand-light/10 transition-all
+                         flex flex-col items-center justify-center gap-2.5 min-h-[110px] group"
+            >
+              <div className="w-9 h-9 rounded-full border-2 border-dashed border-line
+                              group-hover:border-brand flex items-center justify-center transition-colors">
+                <Plus size={16} className="text-ink-tertiary group-hover:text-brand transition-colors" />
+              </div>
+              <span className="text-sm font-medium text-ink-tertiary group-hover:text-brand transition-colors">
+                Create Custom Role
+              </span>
+            </button>
           </div>
 
-          {/* Right: permission checkboxes for selected role */}
-          {selectedRole && roles[selectedRole] && (() => {
-            const role = roles[selectedRole]
-            const rolePerms = permissions[selectedRole] || []
-            const groupList = [...new Set(PERMISSION_LIST.map((p) => p.group))]
-            return (
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-4 mb-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <Badge variant={role.color}>{role.label}</Badge>
-                      {role.system && <span className="text-[10px] text-ink-tertiary">System role</span>}
-                    </div>
-                    <div className="text-sm text-ink-secondary">{role.desc}</div>
-                  </div>
-                  <Button
-                    size="sm"
-                    disabled={!permsDirty}
-                    onClick={() => { toast.success(`Permissions saved for ${role.label}`); setPermsDirty(false) }}
-                  >
-                    Save Changes
-                  </Button>
-                </div>
-
-                <div className="card p-5 space-y-5">
-                  {groupList.map((group) => (
-                    <div key={group}>
-                      <div className="text-[11px] font-semibold text-ink-tertiary uppercase tracking-wider mb-2.5">
-                        {group}
-                      </div>
-                      <div className="space-y-2">
-                        {PERMISSION_LIST.filter((p) => p.group === group).map((p) => (
-                          <label key={p.key} className="flex items-center gap-3 cursor-pointer group">
-                            <input
-                              type="checkbox"
-                              checked={rolePerms.includes(p.key)}
-                              onChange={() => togglePermission(selectedRole, p.key)}
-                              className="accent-brand w-4 h-4 flex-shrink-0"
-                            />
-                            <span className="text-sm text-ink-primary group-hover:text-brand transition-colors">
-                              {p.label}
-                            </span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )
-          })()}
-        </div>
+          {/* Role permissions modal */}
+          {roleModalOpen && roles[roleModalOpen] && (
+            <RolePermissionsModal
+              roleKey={roleModalOpen}
+              role={roles[roleModalOpen]}
+              currentPerms={permissions[roleModalOpen] || []}
+              onSave={handleSavePermissions}
+              onClose={() => setRoleModalOpen(null)}
+            />
+          )}
+        </>
       )}
 
       {/* ── SSO ── */}

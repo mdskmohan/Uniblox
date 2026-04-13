@@ -168,21 +168,25 @@ export default function WhatsNewPanel({ open, onClose }) {
                         {u.title}
                       </div>
 
-                      {/* Meta */}
-                      <div className="flex items-center gap-2 mb-3">
+                      {/* Meta — single inline row */}
+                      <div className="flex items-center gap-1.5 mb-3 flex-wrap">
                         {u.isNew && (
-                          <span className="text-[10px] font-bold bg-brand text-white
-                                           px-2 py-0.5 rounded-full leading-none">
-                            NEW
-                          </span>
+                          <>
+                            <span className="text-[10px] font-bold bg-brand text-white
+                                             px-1.5 py-0.5 rounded-full leading-none">
+                              NEW
+                            </span>
+                            <span className="text-[10px] text-ink-tertiary select-none">·</span>
+                          </>
                         )}
                         <span className={cn(
-                          'text-[10px] font-semibold px-2 py-0.5 rounded-full',
+                          'text-[10px] font-semibold px-1.5 py-0.5 rounded-full',
                           TAG_STYLE[u.tag]
                         )}>
                           {u.tag}
                         </span>
-                        <span className="text-[11px] text-ink-tertiary ml-auto">{u.date}</span>
+                        <span className="text-[10px] text-ink-tertiary select-none">·</span>
+                        <span className="text-[11px] text-ink-tertiary">{u.date}</span>
                       </div>
 
                       {/* Description */}

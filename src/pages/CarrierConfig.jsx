@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { Plus, Info } from 'lucide-react'
 import useAppStore from '@/store/useAppStore'
@@ -19,27 +19,107 @@ const US_STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','
 
 const COMPLEX_STATES = ['CA','NY','IL','WA']
 
+function initAppetite(carrier) {
+  const a = {}
+  INDUSTRIES.forEach((ind) => { a[ind] = carrier?.industryAppetite?.[ind] || 'ACCEPT' })
+  return a
+}
+
+function initMaxSize(carrier) {
+  const m = {}
+  INDUSTRIES.forEach((ind) => { m[ind] = carrier?.maxGroupSize?.[ind] || '' })
+  return m
+}
+
+function initStates(carrier) {
+  if (!carrier) return []
+  if (carrier.states === 'ALL') return [...US_STATES]
+  if (Array.isArray(carrier.states)) return [...carrier.states]
+  return []
+}
+
 export default function CarrierConfig() {
-  const { carriers, activeCarrierId, updateCarrier, setActiveCarrier } = useAppStore()
+  const { carriers, activeCarrierId, updateCarrier } = useAppStore()
   const [selectedId, setSelectedId] = useState(activeCarrierId)
   const carrier = carriers.find((c) => c.id === selectedId) || carriers[0]
 
-  const [customRules, setCustomRules] = useState(carrier?.customRules || '')
-  const [approveThreshold, setApproveThreshold] = useState([carrier?.autoApproveThreshold || 35])
-  const [declineThreshold, setDeclineThreshold] = useState([carrier?.autoDeclineThreshold || 75])
+  // Profile
+  const [profile, setProfile] = useState({
+    name: '', legalName: '', naicNumber: '', status: '', primaryContact: '', contractStart: '',
+  })
+
+  // Industry appetite & max size
+  const [appetite, setAppetite]   = useState({})
+  const [maxSize,  setMaxSize]    = useState({})
+
+  // State availability
+  const [activeStates, setActiveStates] = useState([])
+
+  // Automation thresholds + custom rules
+  const [customRules,       setCustomRules]       = useState('')
+  const [approveThreshold,  setApproveThreshold]  = useState([35])
+  const [declineThreshold,  setDeclineThreshold]  = useState([75])
+
+  // Integration
+  const [integration, setIntegration] = useState({
+    apiEndpoint: '', ediFormat: '834', deliveryMethod: 'SFTP', reportFormat: 'PDF',
+  })
+
+  // Reset all local state whenever the selected carrier changes
+  useEffect(() => {
+    if (!carrier) return
+    setProfile({
+      name:           carrier.name           || '',
+      legalName:      carrier.legalName      || '',
+      naicNumber:     carrier.naicNumber      || '',
+      status:         carrier.status         || '',
+      primaryContact: carrier.primaryContact || '',
+      contractStart:  carrier.contractStart  || '',
+    })
+    setAppetite(initAppetite(carrier))
+    setMaxSize(initMaxSize(carrier))
+    setActiveStates(initStates(carrier))
+    setCustomRules(carrier.customRules || '')
+    setApproveThreshold([carrier.autoApproveThreshold || 35])
+    setDeclineThreshold([carrier.autoDeclineThreshold || 75])
+    setIntegration({
+      apiEndpoint:    carrier.apiEndpoint    || '',
+      ediFormat:      carrier.ediFormat      || '834',
+      deliveryMethod: carrier.deliveryMethod || 'SFTP',
+      reportFormat:   carrier.reportFormat   || 'PDF',
+    })
+  }, [selectedId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleSave() {
     updateCarrier(selectedId, {
+      ...profile,
+      industryAppetite:    appetite,
+      maxGroupSize:        maxSize,
+      states:              activeStates,
       customRules,
       autoApproveThreshold: approveThreshold[0],
       autoDeclineThreshold: declineThreshold[0],
+      ...integration,
     })
-    toast.success('Carrier configuration saved', { description: carrier.name })
+    toast.success('Carrier configuration saved', { description: profile.name || carrier.name })
   }
 
   function handleRunTest() {
     toast.info('Running test submission through carrier configuration...')
     setTimeout(() => toast.success('Test complete — configuration valid. No errors detected.'), 2000)
+  }
+
+  function setAllAppetite(val) {
+    const a = {}
+    INDUSTRIES.forEach((ind) => { a[ind] = val })
+    setAppetite(a)
+    toast.success(`All industries set to ${val === 'ACCEPT' ? 'Accept' : 'Decline'}`)
+  }
+
+  function toggleState(s) {
+    setActiveStates((prev) =>
+      prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]
+    )
   }
 
   if (!carrier) return null
@@ -53,7 +133,7 @@ export default function CarrierConfig() {
           {carriers.map((c) => (
             <button
               key={c.id}
-              onClick={() => { setSelectedId(c.id); setCustomRules(c.customRules || '') }}
+              onClick={() => setSelectedId(c.id)}
               className={cn(
                 'w-full text-left p-3 rounded-md border transition-all',
                 c.id === selectedId
@@ -76,7 +156,8 @@ export default function CarrierConfig() {
             </button>
           ))}
         </div>
-        <Button size="sm" variant="secondary" className="w-full mt-3" onClick={() => toast.info('Add carrier coming soon')}>
+        <Button size="sm" variant="secondary" className="w-full mt-3"
+          onClick={() => toast.info('Add carrier coming soon')}>
           <Plus size={13} /> Add Carrier
         </Button>
       </div>
@@ -84,7 +165,7 @@ export default function CarrierConfig() {
       {/* Right: config form */}
       <div className="flex-1 min-w-0 space-y-5">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">{carrier.name}</h2>
+          <h2 className="text-xl font-semibold">{profile.name || carrier.name}</h2>
           <Button onClick={handleSave}>Save Changes</Button>
         </div>
 
@@ -99,15 +180,19 @@ export default function CarrierConfig() {
         <Section title="Carrier Profile">
           <div className="grid grid-cols-2 gap-3">
             {[
-              ['Carrier Name',     'name',         'text'],
-              ['Legal Entity Name','legalName',     'text'],
-              ['NAIC Number',      'naicNumber',    'text'],
-              ['Contract Status',  'status',        'text'],
-              ['Primary Contact',  'primaryContact','text'],
-              ['Contract Start',   'contractStart', 'date'],
+              ['Carrier Name',      'name',          'text'],
+              ['Legal Entity Name', 'legalName',      'text'],
+              ['NAIC Number',       'naicNumber',     'text'],
+              ['Contract Status',   'status',         'text'],
+              ['Primary Contact',   'primaryContact', 'text'],
+              ['Contract Start',    'contractStart',  'date'],
             ].map(([label, key, type]) => (
               <FormGroup key={key} label={label}>
-                <Input type={type} defaultValue={carrier[key]} disabled className="bg-surface-secondary" />
+                <Input
+                  type={type}
+                  value={profile[key] || ''}
+                  onChange={(e) => setProfile((p) => ({ ...p, [key]: e.target.value }))}
+                />
               </FormGroup>
             ))}
           </div>
@@ -116,8 +201,10 @@ export default function CarrierConfig() {
         {/* Section 2: Industry appetite */}
         <Section title="Industry Appetite">
           <div className="flex justify-end mb-2 gap-2">
-            <button className="text-xs text-positive-text hover:underline" onClick={() => toast.info('Bulk set all to Accept')}>Set all Accept</button>
-            <button className="text-xs text-destructive-text hover:underline" onClick={() => toast.info('Bulk set all to Decline')}>Set all Decline</button>
+            <button className="text-xs text-positive-text hover:underline"
+              onClick={() => setAllAppetite('ACCEPT')}>Set all Accept</button>
+            <button className="text-xs text-destructive-text hover:underline"
+              onClick={() => setAllAppetite('DECLINE')}>Set all Decline</button>
           </div>
           <table className="w-full data-table">
             <thead>
@@ -125,20 +212,34 @@ export default function CarrierConfig() {
             </thead>
             <tbody>
               {INDUSTRIES.map((ind) => {
-                const appetite = carrier.industryAppetite?.[ind] || 'ACCEPT'
+                const val = appetite[ind] || 'ACCEPT'
                 return (
                   <tr key={ind}>
                     <td className="font-medium text-sm">{ind}</td>
                     <td>
-                      <Select defaultValue={appetite} className="h-7 text-xs w-36"
-                        style={{ color: appetite === 'DECLINE' ? 'var(--danger-text)' : appetite === 'MARGINAL' ? 'var(--warning-text)' : 'var(--success-text)' }}>
+                      <Select
+                        value={val}
+                        onChange={(e) => setAppetite((a) => ({ ...a, [ind]: e.target.value }))}
+                        className="h-7 text-xs w-36"
+                        style={{
+                          color: val === 'DECLINE' ? 'var(--danger-text)'
+                               : val === 'MARGINAL' ? 'var(--warning-text)'
+                               : 'var(--success-text)',
+                        }}
+                      >
                         <option value="ACCEPT">Accept</option>
                         <option value="MARGINAL">Marginal — Refer All</option>
                         <option value="DECLINE">Decline</option>
                       </Select>
                     </td>
                     <td>
-                      <Input type="number" defaultValue={carrier.maxGroupSize?.[ind] || ''} className="h-7 text-xs w-24" placeholder="Unlimited" />
+                      <Input
+                        type="number"
+                        value={maxSize[ind] || ''}
+                        onChange={(e) => setMaxSize((m) => ({ ...m, [ind]: e.target.value }))}
+                        className="h-7 text-xs w-24"
+                        placeholder="Unlimited"
+                      />
                     </td>
                   </tr>
                 )
@@ -193,17 +294,31 @@ export default function CarrierConfig() {
 
         {/* Section 4: State availability */}
         <Section title="State Availability">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs text-ink-tertiary">
+              {activeStates.length} of {US_STATES.length} states enabled
+            </span>
+            <div className="flex gap-2">
+              <button className="text-xs text-brand hover:underline"
+                onClick={() => setActiveStates([...US_STATES])}>Enable all</button>
+              <button className="text-xs text-ink-tertiary hover:underline"
+                onClick={() => setActiveStates([])}>Disable all</button>
+            </div>
+          </div>
           <div className="flex flex-wrap gap-1.5">
             {US_STATES.map((s) => {
-              const active = carrier.states === 'ALL' || (Array.isArray(carrier.states) && carrier.states.includes(s))
+              const active  = activeStates.includes(s)
               const complex = COMPLEX_STATES.includes(s)
               return (
                 <button
                   key={s}
                   title={complex ? 'Complex regulations — review before enabling' : s}
+                  onClick={() => toggleState(s)}
                   className={cn(
                     'px-2 py-1 rounded text-xs font-medium border transition-all',
-                    active ? 'bg-brand text-white border-brand' : 'bg-surface-secondary text-ink-secondary border-line hover:border-brand',
+                    active
+                      ? 'bg-brand text-white border-brand'
+                      : 'bg-surface-secondary text-ink-secondary border-line hover:border-brand',
                     complex && active && 'ring-1 ring-caution ring-offset-1'
                   )}
                 >
@@ -235,16 +350,42 @@ export default function CarrierConfig() {
         <Section title="Integration Settings">
           <div className="grid grid-cols-2 gap-3">
             <FormGroup label="Carrier System API Endpoint">
-              <Input placeholder="https://api.carrier.com/v1" className="text-sm" />
+              <Input
+                value={integration.apiEndpoint}
+                onChange={(e) => setIntegration((i) => ({ ...i, apiEndpoint: e.target.value }))}
+                placeholder="https://api.carrier.com/v1"
+                className="text-sm"
+              />
             </FormGroup>
             <FormGroup label="EDI Format">
-              <Select><option>834</option><option>835</option><option>820</option></Select>
+              <Select
+                value={integration.ediFormat}
+                onChange={(e) => setIntegration((i) => ({ ...i, ediFormat: e.target.value }))}
+              >
+                <option value="834">834</option>
+                <option value="835">835</option>
+                <option value="820">820</option>
+              </Select>
             </FormGroup>
             <FormGroup label="File Delivery Method">
-              <Select><option>SFTP</option><option>API</option><option>Email</option></Select>
+              <Select
+                value={integration.deliveryMethod}
+                onChange={(e) => setIntegration((i) => ({ ...i, deliveryMethod: e.target.value }))}
+              >
+                <option value="SFTP">SFTP</option>
+                <option value="API">API</option>
+                <option value="Email">Email</option>
+              </Select>
             </FormGroup>
             <FormGroup label="Report Format">
-              <Select><option>PDF</option><option>CSV</option><option>XLSX</option></Select>
+              <Select
+                value={integration.reportFormat}
+                onChange={(e) => setIntegration((i) => ({ ...i, reportFormat: e.target.value }))}
+              >
+                <option value="PDF">PDF</option>
+                <option value="CSV">CSV</option>
+                <option value="XLSX">XLSX</option>
+              </Select>
             </FormGroup>
           </div>
         </Section>
