@@ -25,6 +25,12 @@
  */
 
 import { injectStateRulesIntoPrompt } from './compliance'
+import {
+  sanitizeSubmissionInput,
+  validateUnderwritingOutput,
+  applyConfidenceFloor,
+  GUARDRAIL_VERSION,
+} from './guardrails'
 
 const API_URL = 'https://api.anthropic.com/v1/messages'
 const MODEL   = 'claude-sonnet-4-20250514'
@@ -122,13 +128,21 @@ export async function callClaudeAPI({ userMessage, carrier, state, apiKey, onSte
     throw new Error('API_KEY_MISSING')
   }
 
+  // ── Guardrail: sanitize input before sending to the model ────────────────
+  const sanitized = sanitizeSubmissionInput(userMessage)
+  if (sanitized.hasInjection) {
+    console.warn(`[Guardrail v${GUARDRAIL_VERSION}] Prompt injection detected and stripped.`)
+  }
+  // Pass sanitization flags through so the UI can surface warnings to the underwriter
+  const inputFlags = sanitized.flags
+
   const systemPrompt = buildSystemPrompt(carrier, state)
 
   const body = {
     model: MODEL,
     max_tokens: 2048,
     system: systemPrompt,
-    messages: [{ role: 'user', content: userMessage }],
+    messages: [{ role: 'user', content: sanitized.text }],
   }
 
   const makeRequest = async () => {
@@ -165,19 +179,45 @@ export async function callClaudeAPI({ userMessage, carrier, state, apiKey, onSte
 
   const rawText = data.content?.[0]?.text || ''
 
-  // Parse JSON from response
-  let parsed
+  // ── Parse JSON from response ──────────────────────────────────────────────
+  let rawParsed
   try {
-    // Strip any accidental markdown fences
     const cleaned = rawText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-    parsed = JSON.parse(cleaned)
+    rawParsed = JSON.parse(cleaned)
   } catch {
     throw new Error('AI returned invalid JSON. Please try again.')
   }
 
+  // ── Guardrail: validate and normalize the output schema ───────────────────
+  const { valid, issues, result: validated } = validateUnderwritingOutput(rawParsed)
+  if (!valid || issues.length > 0) {
+    console.warn(`[Guardrail v${GUARDRAIL_VERSION}] Output validation issues:`, issues)
+  }
+
+  // ── Guardrail: apply confidence floor (code-level, not just prompt) ───────
+  const { result: final, overrideApplied, overrideReason } = applyConfidenceFloor(validated)
+  if (overrideApplied) {
+    console.warn(`[Guardrail v${GUARDRAIL_VERSION}] Confidence floor override:`, overrideReason)
+  }
+
   if (onStep) onStep(3)
 
-  return parsed
+  // Attach guardrail metadata so callers can surface warnings in the UI
+  return {
+    ...final,
+    _guardrails: {
+      version:              GUARDRAIL_VERSION,
+      inputFlags,
+      outputIssues:         issues,
+      confidenceOverride:   overrideApplied,
+      confidenceOverrideReason: overrideReason,
+      inputTruncated:       sanitized.truncated,
+      piiDetected:          sanitized.hasPII,
+      piiTypes:             sanitized.piiTypes,
+      injectionDetected:    sanitized.hasInjection,
+      protectedClassFound:  sanitized.hasProtectedClass,
+    },
+  }
 }
 
 // ─── analyzeGroupCensus ───────────────────────────────────────────────────────
