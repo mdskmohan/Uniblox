@@ -1,8 +1,56 @@
 # Uniblox — AI-Native Group Insurance Underwriting Platform
 
+![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white)
+![Tailwind](https://img.shields.io/badge/Tailwind-3-06B6D4?logo=tailwindcss&logoColor=white)
+![Claude](https://img.shields.io/badge/Claude-Sonnet_4-D97757?logo=anthropic&logoColor=white)
+![License](https://img.shields.io/badge/license-MIT-green)
+
 > **Live Prototype →** [uniblox-dun.vercel.app](https://uniblox-dun.vercel.app?_vercel_share=IEDe2H0uBR236PuVWpEoDzqOZhs8TJDr)
 >
 > A fully interactive, front-end prototype of an AI-first group benefits underwriting platform. No backend required. All AI calls run live against the Anthropic Claude API.
+
+---
+
+## Table of Contents
+
+**Product**
+- [The Problem We're Solving](#the-problem-were-solving)
+- [What Uniblox Does](#what-uniblox-does)
+- [Platform Overview](#platform-overview)
+
+**Getting Started**
+- [Prerequisites & Installation](#getting-started)
+- [Connect the AI](#connect-the-ai)
+
+**Features**
+- [New Submission + AI Risk Assessment](#1-new-submission--ai-risk-assessment)
+- [Compliance Engine](#2-compliance-engine)
+- [Carrier Configuration](#3-carrier-configuration)
+- [EOI Management](#4-eoi-management-evidence-of-insurability)
+- [Team & Access Control](#5-team--access-control)
+- [AI Assistant (Copilot)](#6-ai-assistant-copilot)
+- [Analytics Suite](#7-analytics-suite)
+
+**Technical Architecture**
+- [System Architecture](#system-architecture)
+- [AI Architecture](#ai-architecture)
+- [Data Model](#data-model)
+- [Application Routes](#application-routes)
+
+**AI Safety**
+- [AI Guardrails](#ai-guardrails)
+
+**Engineering Reference**
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Design System](#design-system)
+- [Key Architectural Decisions](#key-architectural-decisions)
+
+**Roadmap**
+- [Production Readiness](#production-readiness)
+- [Prototype → Production Roadmap](#prototype--production-roadmap)
+- [Future State: Agentic Architecture](#future-state-agentic-architecture)
 
 ---
 
@@ -67,7 +115,42 @@ Uniblox is organized into five operational modules, each mapping to a real workf
 
 ---
 
-## Feature Deep Dive
+## Getting Started
+
+### Prerequisites
+- Node.js 18+
+- An [Anthropic API key](https://console.anthropic.com) (for live AI features)
+
+### Run locally
+
+```bash
+git clone https://github.com/mdskmohan/Uniblox.git
+cd Uniblox
+npm install
+npm run dev
+# → http://localhost:5173
+```
+
+### Build for production
+
+```bash
+npm run build       # output → dist/
+npm run preview     # serve dist/ locally at :4173
+```
+
+### Connect the AI
+
+1. Open the app → click your avatar (top-right) → **Settings**
+2. Navigate to **AI Settings**
+3. Paste your Anthropic API key → **Save Key**
+4. Click **Test Connection** — should confirm the model and latency
+5. All underwriting analyses, census AI, and the AI Assistant are now live
+
+> The key lives in browser memory only. It is never written anywhere. Refreshing the page clears it.
+
+---
+
+## Features
 
 ### 1. New Submission + AI Risk Assessment
 
@@ -84,7 +167,16 @@ The core workflow. A broker submission arrives (text paste, PDF, Word doc, or Ex
   │  TXT  ──► native FileReader             │
   └──────────────────┬──────────────────────┘
                      │ raw text
-  Step 2: COMPLIANCE ENGINE (synchronous, no API)
+  Step 2: GUARDRAILS (input sanitization)
+  ┌──────────────────▼──────────────────────┐
+  │  guardrails.js sanitizes:               │
+  │  • Prompt injection attempts stripped   │
+  │  • PII detected and flagged             │
+  │  • Protected class keywords surfaced    │
+  │  • Length capped at 12,000 chars        │
+  └──────────────────┬──────────────────────┘
+                     │ sanitized text
+  Step 3: COMPLIANCE ENGINE (synchronous, no API)
   ┌──────────────────▼──────────────────────┐
   │  compliance.js checks:                  │
   │  • Is this a small group? (state rules) │
@@ -94,7 +186,7 @@ The core workflow. A broker submission arrives (text paste, PDF, Word doc, or Ex
   │  • Prohibited risk factors to strip     │
   └──────────────────┬──────────────────────┘
                      │ compliance context injected into prompt
-  Step 3: AI ASSESSMENT (Claude Sonnet 4)
+  Step 4: AI ASSESSMENT (Claude Sonnet 4)
   ┌──────────────────▼──────────────────────┐
   │  System prompt includes:                │
   │  • Base underwriting instructions       │
@@ -113,15 +205,15 @@ The core workflow. A broker submission arrives (text paste, PDF, Word doc, or Ex
   │  • carrierAppetiteMatch                 │
   └──────────────────┬──────────────────────┘
                      │
-  Step 4: VALIDATION OVERRIDE
+  Step 5: OUTPUT VALIDATION + COMPLIANCE OVERRIDE
   ┌──────────────────▼──────────────────────┐
-  │  validateAIRecommendation():            │
+  │  Schema validated, ranges clamped       │
   │  If AI says DECLINE but GI applies →    │
   │  Override to REFER + log reason         │
-  │  (AI cannot override a law)             │
+  │  Confidence < 60% → force REFER         │
   └──────────────────┬──────────────────────┘
                      │
-  Step 5: AUDIT ENTRY
+  Step 6: AUDIT ENTRY
   ┌──────────────────▼──────────────────────┐
   │  Every assessment logged:               │
   │  timestamp · user · input hash ·        │
@@ -214,12 +306,12 @@ Each carrier has its own appetite grid, thresholds, and custom rules that are in
   │                      │ Restaurant   │ DECLINE      │   │
   │ AUTOMATION           │ Healthcare   │ ACCEPT       │   │
   │ ┌──────────────────┐ │ Manufacturing│ MARGINAL     │   │
-  │ │ 0──[35]────[75]──100 └──────────────┴──────────────┘   │
-  │ │  Approve Review Decline                            │   │
-  │ └──────────────────┘                                │   │
-  │ STATE AVAILABILITY   CUSTOM RULES (→ AI prompt)     │   │
-  │ Toggle 51 states     Plain-English rules injected   │   │
-  │                      into every Claude API call     │   │
+  │ │ 0──[35]────[75]──100└──────────────┴──────────────┘   │
+  │ │  Approve Review Decline                           │   │
+  │ └──────────────────┘                               │   │
+  │ STATE AVAILABILITY   CUSTOM RULES (→ AI prompt)    │   │
+  │ Toggle 51 states     Plain-English rules injected  │   │
+  │                      into every Claude API call    │   │
   └─────────────────────────────────────────────────────────┘
 ```
 
@@ -342,8 +434,8 @@ A context-aware AI chat panel accessible from any page via the ✦ icon.
 │  │                    React 18 + Vite 5                      │   │
 │  │                                                          │   │
 │  │  ┌──────────────┐   ┌──────────────┐   ┌─────────────┐  │   │
-│  │  │  AppShell    │   │ SettingsShell│   │   21 Pages  │  │   │
-│  │  │  (Sidebar +  │   │ (own nav,    │   │  (one file  │  │   │
+│  │  │  AppShell    │   │SettingsShell │   │  24 Pages   │  │   │
+│  │  │  (Sidebar +  │   │ (own nav,    │   │ (one file   │  │   │
 │  │  │   TopNav)    │   │  no sidebar) │   │  per route) │  │   │
 │  │  └──────┬───────┘   └──────────────┘   └─────────────┘  │   │
 │  │         │                                                │   │
@@ -354,29 +446,28 @@ A context-aware AI chat panel accessible from any page via the ✦ icon.
 │  │  └──────┬───────────────────────────────────────────┘   │   │
 │  │         │                                                │   │
 │  │  ┌──────▼──────────────────────────────────────────┐    │   │
-│  │  │              Engine Layer                        │    │   │
-│  │  │  ┌────────────┐ ┌───────────┐ ┌──────────────┐  │    │   │
-│  │  │  │  ai.js     │ │compliance │ │ fileParser   │  │    │   │
-│  │  │  │ 4 exports  │ │  .js      │ │  .js         │  │    │   │
-│  │  │  │            │ │ 7 exports │ │ PDF/DOCX/    │  │    │   │
-│  │  │  │ Claude API │ │ pure fns  │ │ XLSX/TXT     │  │    │   │
-│  │  │  │ (fetch)    │ │ no API    │ │ in-browser   │  │    │   │
-│  │  │  └─────┬──────┘ └───────────┘ └──────────────┘  │    │   │
-│  │  └────────┼────────────────────────────────────────┘    │   │
-│  └───────────┼──────────────────────────────────────────────┘   │
-│              │ HTTPS / fetch                                     │
-└──────────────┼───────────────────────────────────────────────────┘
-               │
-               ▼
-   ┌───────────────────────┐
-   │   api.anthropic.com   │
-   │   Claude Sonnet 4     │
-   │   (claude-sonnet-4-   │
-   │    20250514)          │
-   └───────────────────────┘
+│  │  │                  Engine Layer                    │    │   │
+│  │  │  ┌──────────┐ ┌──────────┐ ┌────────┐ ┌──────┐  │    │   │
+│  │  │  │  ai.js   │ │compliance│ │file    │ │guard │  │    │   │
+│  │  │  │ 4 fns    │ │  .js     │ │Parser  │ │rails │  │    │   │
+│  │  │  │ Claude   │ │ 7 fns    │ │  .js   │ │  .js │  │    │   │
+│  │  │  │ API calls│ │ pure fns │ │in-brwsr│ │5-lyr │  │    │   │
+│  │  │  └────┬─────┘ └──────────┘ └────────┘ └──────┘  │    │   │
+│  │  └───────┼────────────────────────────────────────┘    │   │
+│  └──────────┼──────────────────────────────────────────────┘   │
+│             │ HTTPS / fetch                                     │
+└─────────────┼─────────────────────────────────────────────────-┘
+              │
+              ▼
+  ┌───────────────────────┐
+  │   api.anthropic.com   │
+  │   Claude Sonnet 4     │
+  │  (claude-sonnet-4-    │
+  │   20250514)           │
+  └───────────────────────┘
 
-   No other external services. No backend. No database.
-   The API key lives only in Zustand memory — never persisted to disk.
+  No other external services. No backend. No database.
+  The API key lives only in Zustand memory — never persisted to disk.
 ```
 
 ---
@@ -557,6 +648,131 @@ Four distinct AI call patterns, each with a purpose-built system prompt:
 
 ---
 
+## AI Guardrails
+
+Uniblox treats AI safety as an engineering problem, not a policy problem. Guardrails are implemented in code (`src/engine/guardrails.js`) and run on every underwriting call — they cannot be bypassed by a clever prompt or a model hallucination.
+
+### The Guardrail Pipeline
+
+```
+  Raw submission text (from paste or file)
+          │
+          ▼
+  ┌─────────────────────────────────────────────────────────┐
+  │  LAYER 1 — INPUT SANITIZATION (before API call)        │
+  │  sanitizeSubmissionInput()                              │
+  │                                                         │
+  │  ① Length guard                                         │
+  │     Max 12,000 chars (~3,000 tokens)                    │
+  │     Truncated text gets a visible notice appended       │
+  │                                                         │
+  │  ② Prompt injection detection                           │
+  │     Scans for: "ignore previous instructions",          │
+  │     "you are now", "new instructions:", "[INST]",       │
+  │     "jailbreak", "DAN mode", ChatML injection, etc.     │
+  │     Matched text → replaced with [CONTENT REMOVED]      │
+  │     Flag surfaced to underwriter in the UI              │
+  │                                                         │
+  │  ③ PII detection (flag, not strip)                      │
+  │     Detects: SSN (XXX-XX-XXXX), DOB (MM/DD/YYYY),       │
+  │     credit card numbers, bank routing numbers           │
+  │     Flagged with type so underwriter can review         │
+  │                                                         │
+  │  ④ Protected class keyword detection                    │
+  │     Flags: race, ethnicity, nationality, religion,      │
+  │     sex, gender, pregnancy, disability, genetic, etc.   │
+  │     Called out to the model as prohibited factors       │
+  └──────────────────────┬──────────────────────────────────┘
+                         │ sanitized text
+                         ▼
+  ┌─────────────────────────────────────────────────────────┐
+  │  LAYER 2 — SYSTEM PROMPT GUARDRAILS (inside the call)  │
+  │  buildSystemPrompt() in ai.js                           │
+  │                                                         │
+  │  ① Protected class prohibition (hardcoded)              │
+  │  ② Advisory-only framing                                │
+  │  ③ Confidence floor instruction (< 60% → REFER)         │
+  │  ④ State compliance rules injected per submission       │
+  │  ⑤ No internal scores in adverse action reason          │
+  └──────────────────────┬──────────────────────────────────┘
+                         │ Claude response (raw JSON)
+                         ▼
+  ┌─────────────────────────────────────────────────────────┐
+  │  LAYER 3 — OUTPUT VALIDATION (after API response)      │
+  │  validateUnderwritingOutput()                           │
+  │                                                         │
+  │  ① Required field presence check (7 fields)             │
+  │  ② riskScore: clamp 0–100, force integer                │
+  │  ③ recommendation: enum validation → defaults to REFER  │
+  │  ④ confidenceLevel: clamp 0–100                         │
+  │  ⑤ subScores: all 4 dimensions validated + clamped      │
+  │  ⑥ carrierAppetiteMatch: enum validation                 │
+  │  ⑦ Arrays enforced as arrays throughout                 │
+  │  ⑧ dataCompleteness: clamp 0.0–1.0                      │
+  └──────────────────────┬──────────────────────────────────┘
+                         │ validated JSON
+                         ▼
+  ┌─────────────────────────────────────────────────────────┐
+  │  LAYER 4 — COMPLIANCE OVERRIDE (law beats the model)   │
+  │  validateAIRecommendation() in compliance.js            │
+  │                                                         │
+  │  If AI says DECLINE AND guaranteed issue applies:       │
+  │  → Force to REFER, log override reason + statute        │
+  │  ERISA self-funded plans: state rules preempted         │
+  └──────────────────────┬──────────────────────────────────┘
+                         │
+                         ▼
+  ┌─────────────────────────────────────────────────────────┐
+  │  LAYER 5 — CONFIDENCE FLOOR (code, not just prompt)    │
+  │  applyConfidenceFloor()                                 │
+  │                                                         │
+  │  If confidenceLevel < 60 AND recommendation ≠ REFER:   │
+  │  → Force to REFER                                       │
+  │  → Append override note to complianceNotes             │
+  │  Note: a prompt instruction alone is not sufficient     │
+  │  for a safety override. Code always wins.               │
+  └──────────────────────┬──────────────────────────────────┘
+                         │ final result + _guardrails metadata
+                         ▼
+                   Application / UI
+```
+
+### Guardrail Metadata
+
+Every `callClaudeAPI()` response includes a `_guardrails` field so the UI can surface warnings to the underwriter:
+
+```javascript
+result._guardrails = {
+  version:                   '1.0.0',
+  inputFlags:                [],        // warnings from input sanitization
+  outputIssues:              [],        // schema normalization notes
+  confidenceOverride:        false,     // true if confidence floor fired
+  confidenceOverrideReason:  null,
+  inputTruncated:            false,
+  piiDetected:               false,
+  piiTypes:                  [],        // e.g. ['SSN', 'DOB']
+  injectionDetected:         false,
+  protectedClassFound:       false,
+}
+```
+
+### What Each Guardrail Prevents
+
+| Guardrail | Attack / Failure It Prevents |
+|-----------|------------------------------|
+| Prompt injection filter | Broker embeds "ignore all previous instructions" in their PDF |
+| PII detection | SSNs / DOBs in a submission influencing risk scoring |
+| Protected class detection | Racial or disability language affecting risk output |
+| Input length limit | Submission engineered to overflow context and distort output |
+| Output schema validation | Model hallucinating extra fields or out-of-range scores |
+| Confidence floor (code) | Model says APPROVE at 45% confidence — blocked regardless of prompt |
+| GI compliance override | Model recommends DECLINE for a guaranteed-issue small group |
+| ERISA preemption | State GI rules incorrectly applied to self-funded federal plans |
+| Advisory-only framing | Model claiming to make a binding decision |
+| No scores in adverse notice | Internal scoring model leaked to brokers |
+
+---
+
 ## Tech Stack
 
 ```
@@ -587,50 +803,50 @@ uniblox/
 │   └── favicon.ico
 │
 ├── src/
-│   ├── engine/                 Core logic — no UI
-│   │   ├── ai.js               All Claude API calls (4 functions)
-│   │   ├── compliance.js       State insurance rule enforcement (7 functions)
-│   │   ├── fileParser.js       Browser-side PDF/DOCX/XLSX/TXT parsing
-│   │   └── guardrails.js       AI safety layer — input sanitization, output validation, confidence floor
+│   ├── engine/                    Core logic — no UI dependencies
+│   │   ├── ai.js                  All Claude API calls (4 functions)
+│   │   ├── compliance.js          State insurance rule enforcement (7 functions)
+│   │   ├── fileParser.js          Browser-side PDF/DOCX/XLSX/TXT parsing
+│   │   └── guardrails.js          AI safety layer — 5-layer input/output pipeline
 │   │
 │   ├── store/
-│   │   ├── useAppStore.js      Zustand store — single source of truth
-│   │   └── sampleData.js       Seed data: carriers, submissions, state rules
+│   │   ├── useAppStore.js         Zustand store — single source of truth
+│   │   └── sampleData.js          Seed data: carriers, submissions, state rules
 │   │
 │   ├── components/
-│   │   ├── layout/             Shell components
-│   │   │   ├── AppShell.jsx        Main app shell (sidebar + topnav + outlet)
-│   │   │   ├── Sidebar.jsx         Collapsible navigation sidebar
-│   │   │   ├── TopNav.jsx          Sticky top bar (AI, What's New, notifs, avatar)
-│   │   │   ├── SettingsShell.jsx   Settings-specific shell (own sidebar nav)
-│   │   │   ├── AIAssistantPanel.jsx Copilot slide-in panel (right)
-│   │   │   ├── DocsSupportPanel.jsx Docs & support slide-in panel
-│   │   │   └── WhatsNewPanel.jsx   Product changelog slide-in panel
+│   │   ├── layout/                Shell components
+│   │   │   ├── AppShell.jsx           Main app shell (sidebar + topnav + outlet)
+│   │   │   ├── Sidebar.jsx            Collapsible navigation sidebar
+│   │   │   ├── TopNav.jsx             Sticky top bar (AI, What's New, notifs, avatar)
+│   │   │   ├── SettingsShell.jsx      Settings-specific shell (own sidebar nav)
+│   │   │   ├── AIAssistantPanel.jsx   Copilot slide-in panel (right)
+│   │   │   ├── DocsSupportPanel.jsx   Docs & support slide-in panel
+│   │   │   └── WhatsNewPanel.jsx      Product changelog slide-in panel
 │   │   │
-│   │   ├── shared/             Reusable page-level components
-│   │   │   ├── PageHeader.jsx      Title + subtitle + actions row
-│   │   │   ├── Banner.jsx          Info / warning / error banners
-│   │   │   ├── KPICard.jsx         Metric card with trend indicator
-│   │   │   ├── RiskScore.jsx       Risk score ring/bar component
-│   │   │   └── ErrorBoundary.jsx   React error boundary
+│   │   ├── shared/                Reusable page-level components
+│   │   │   ├── PageHeader.jsx         Title + subtitle + actions row
+│   │   │   ├── Banner.jsx             Info / warning / error banners
+│   │   │   ├── KPICard.jsx            Metric card with trend indicator
+│   │   │   ├── RiskScore.jsx          Risk score ring/bar component
+│   │   │   └── ErrorBoundary.jsx      React error boundary
 │   │   │
-│   │   └── ui/                 Design system primitives
-│   │       ├── button.jsx          Variants: default, secondary, destructive, ghost
-│   │       ├── badge.jsx           StatusBadge + Badge (colored tags)
-│   │       ├── input.jsx           Input, Textarea, Select, FormGroup
-│   │       ├── card.jsx            Surface card wrapper
-│   │       ├── dialog.jsx          Modal dialog (Radix)
-│   │       ├── tabs.jsx            Tab navigation (Radix)
-│   │       ├── switch.jsx          Toggle switch (Radix)
-│   │       ├── slider.jsx          Range slider (Radix)
-│   │       ├── checkbox.jsx        Checkbox (Radix)
-│   │       ├── progress.jsx        Progress bar
-│   │       └── tooltip.jsx         Tooltip (Radix)
+│   │   └── ui/                    Design system primitives
+│   │       ├── button.jsx             Variants: default, secondary, destructive, ghost
+│   │       ├── badge.jsx              StatusBadge + Badge (colored tags)
+│   │       ├── input.jsx              Input, Textarea, Select, FormGroup
+│   │       ├── card.jsx               Surface card wrapper
+│   │       ├── dialog.jsx             Modal dialog (Radix)
+│   │       ├── tabs.jsx               Tab navigation (Radix)
+│   │       ├── switch.jsx             Toggle switch (Radix)
+│   │       ├── slider.jsx             Range slider (Radix)
+│   │       ├── checkbox.jsx           Checkbox (Radix)
+│   │       ├── progress.jsx           Progress bar
+│   │       └── tooltip.jsx            Tooltip (Radix)
 │   │
-│   ├── pages/                  One file per route (24 pages)
+│   ├── pages/                     One file per route (24 pages)
 │   │   ├── Submissions.jsx
-│   │   ├── NewSubmission.jsx       File upload + AI analysis trigger
-│   │   ├── SubmissionDetail.jsx    Full AI assessment + copilot
+│   │   ├── NewSubmission.jsx          File upload + AI analysis trigger
+│   │   ├── SubmissionDetail.jsx       Full AI assessment + copilot
 │   │   ├── PendingReview.jsx
 │   │   ├── DecisionsArchive.jsx
 │   │   ├── UnderwritingQueue.jsx
@@ -646,16 +862,16 @@ uniblox/
 │   │   ├── Preferences.jsx
 │   │   ├── Notifications.jsx
 │   │   ├── Security.jsx
-│   │   ├── TeamAccess.jsx          Members + roles modal + SSO + API keys
+│   │   ├── TeamAccess.jsx             Members + roles modal + SSO + API keys
 │   │   ├── Billing.jsx
-│   │   ├── CarrierConfig.jsx       Full carrier CRUD + appetite grid
-│   │   ├── AISettings.jsx          Live prompt editor + key management
-│   │   ├── ComplianceRules.jsx     Toggle / add / delete rules
-│   │   └── StateGuidelines.jsx     51-state regulatory reference
+│   │   ├── CarrierConfig.jsx          Full carrier CRUD + appetite grid
+│   │   ├── AISettings.jsx             Live prompt editor + key management
+│   │   ├── ComplianceRules.jsx        Toggle / add / delete rules
+│   │   └── StateGuidelines.jsx        51-state regulatory reference
 │   │
-│   ├── App.jsx                 Router config + route tree
-│   ├── main.jsx                React root mount
-│   └── index.css               Tailwind directives + CSS design tokens
+│   ├── App.jsx                    Router config + route tree
+│   ├── main.jsx                   React root mount
+│   └── index.css                  Tailwind directives + CSS design tokens
 │
 ├── package.json
 ├── vite.config.js
@@ -710,172 +926,40 @@ File parsing (PDF via pdfjs-dist, Word via mammoth.js, Excel via SheetJS) runs e
 ### 5. Census Privacy by Design
 `analyzeGroupCensus()` receives only aggregate statistics (averages, totals, distributions) — never individual employee records. Individual PII never leaves the browser, which keeps the prototype HIPAA-adjacent by design.
 
+### 6. Safety as Code, Not Policy
+Guardrails are implemented in `guardrails.js` as pure functions that run unconditionally on every call. Prompt instructions alone are not sufficient for safety-critical overrides — a code-level check that cannot be bypassed by any prompt is always the final word.
+
 ---
 
-## AI Guardrails
+## Production Readiness
 
-Uniblox treats AI safety as an engineering problem, not a policy problem. Guardrails are implemented in code (`src/engine/guardrails.js`) and run on every underwriting call — they cannot be bypassed by a clever prompt or a model hallucination.
+**What is production-quality today:**
+- Full underwriting workflow, end-to-end, with real Claude API calls
+- Compliance engine is a faithful implementation of real state insurance rules
+- 5-layer AI guardrail pipeline — injection detection, PII flagging, schema validation, compliance override, confidence floor
+- Role-based access, permission system, audit log — all architecturally sound
+- UI/UX is polished to a commercial standard — dark mode, responsive, accessible
+- Error handling, retry logic, loading states, empty states — throughout
 
-### The Guardrail Pipeline
+**What needs to be added before real launch:**
 
-```
-  Raw submission text (from paste or file)
-          │
-          ▼
-  ┌─────────────────────────────────────────────────────────┐
-  │  LAYER 1 — INPUT SANITIZATION (before API call)        │
-  │  sanitizeSubmissionInput()                              │
-  │                                                         │
-  │  ① Length guard                                         │
-  │     Max 12,000 chars (~3,000 tokens)                    │
-  │     Truncated text gets a visible notice appended       │
-  │                                                         │
-  │  ② Prompt injection detection                           │
-  │     Scans for: "ignore previous instructions",          │
-  │     "you are now", "new instructions:", "[INST]",       │
-  │     "jailbreak", "DAN mode", ChatML injection, etc.     │
-  │     Matched text → replaced with [CONTENT REMOVED]      │
-  │     Flag surfaced to underwriter in the UI              │
-  │                                                         │
-  │  ③ PII detection (flag, not strip)                      │
-  │     Detects: SSN (XXX-XX-XXXX), DOB (MM/DD/YYYY),       │
-  │     credit card numbers, bank routing numbers           │
-  │     Flagged with type so underwriter can review         │
-  │     PII is not used in scoring (prompt instruction)     │
-  │                                                         │
-  │  ④ Protected class keyword detection                    │
-  │     Flags: race, ethnicity, nationality, religion,      │
-  │     sex, gender, pregnancy, disability, genetic, etc.   │
-  │     These are called out to the model explicitly        │
-  │     as prohibited factors                               │
-  └──────────────────────┬──────────────────────────────────┘
-                         │ sanitized text
-                         ▼
-  ┌─────────────────────────────────────────────────────────┐
-  │  LAYER 2 — SYSTEM PROMPT GUARDRAILS (inside the call)  │
-  │  buildSystemPrompt() in ai.js                           │
-  │                                                         │
-  │  ① Protected class prohibition (hardcoded)              │
-  │     "NEVER use: race, color, national origin, sex,      │
-  │      age, disability, genetic information"              │
-  │                                                         │
-  │  ② Advisory-only framing                                │
-  │     "You are ADVISORY ONLY — all final decisions        │
-  │      are made by human underwriters"                    │
-  │                                                         │
-  │  ③ Confidence floor instruction                         │
-  │     "If confidence < 60%, always recommend REFER"       │
-  │                                                         │
-  │  ④ State compliance rules injected                      │
-  │     GI laws, prohibited factors, notice deadlines       │
-  │     specific to the submission's state                  │
-  │                                                         │
-  │  ⑤ No internal scores in adverse action reason          │
-  │     "adverseActionReason: plain English for broker,     │
-  │      no internal scores"                                │
-  └──────────────────────┬──────────────────────────────────┘
-                         │ Claude response (raw JSON)
-                         ▼
-  ┌─────────────────────────────────────────────────────────┐
-  │  LAYER 3 — OUTPUT VALIDATION (after API response)      │
-  │  validateUnderwritingOutput()                           │
-  │                                                         │
-  │  ① Required field presence check                        │
-  │     riskScore, recommendation, confidenceLevel,         │
-  │     reasoningPoints, extractedData, subScores,          │
-  │     carrierAppetiteMatch — all must exist               │
-  │                                                         │
-  │  ② riskScore: clamp to 0–100, force integer             │
-  │  ③ recommendation: must be APPROVE|REFER|DECLINE        │
-  │     → defaults to REFER if invalid                      │
-  │  ④ confidenceLevel: clamp to 0–100                      │
-  │  ⑤ subScores: all 4 dimensions validated, range-clamped │
-  │  ⑥ carrierAppetiteMatch: enum validation                 │
-  │  ⑦ Arrays that must be arrays (reasoningPoints, etc.)   │
-  │  ⑧ dataCompleteness: clamp to 0.0–1.0                   │
-  └──────────────────────┬──────────────────────────────────┘
-                         │ validated JSON
-                         ▼
-  ┌─────────────────────────────────────────────────────────┐
-  │  LAYER 4 — COMPLIANCE OVERRIDE (law beats the model)   │
-  │  validateAIRecommendation() in compliance.js            │
-  │                                                         │
-  │  If AI says DECLINE AND guaranteed issue applies:       │
-  │  → Force to REFER, log override reason + statute        │
-  │  ERISA self-funded plans: state rules preempted         │
-  └──────────────────────┬──────────────────────────────────┘
-                         │
-                         ▼
-  ┌─────────────────────────────────────────────────────────┐
-  │  LAYER 5 — CONFIDENCE FLOOR (code, not just prompt)    │
-  │  applyConfidenceFloor()                                 │
-  │                                                         │
-  │  If confidenceLevel < 60 AND recommendation ≠ REFER:   │
-  │  → Force to REFER                                       │
-  │  → Append override note to complianceNotes             │
-  │  Note: relying on a prompt instruction alone for a      │
-  │  safety override is not sufficient. Code always wins.  │
-  └──────────────────────┬──────────────────────────────────┘
-                         │ final result + _guardrails metadata
-                         ▼
-                   Application / UI
-```
-
-### Guardrail Metadata
-
-Every `callClaudeAPI()` response includes a `_guardrails` field so the UI can surface warnings to the underwriter:
-
-```javascript
-result._guardrails = {
-  version:                   '1.0.0',
-  inputFlags:                [],        // warnings from input sanitization
-  outputIssues:              [],        // schema normalization notes
-  confidenceOverride:        false,     // true if confidence floor fired
-  confidenceOverrideReason:  null,
-  inputTruncated:            false,
-  piiDetected:               false,
-  piiTypes:                  [],        // e.g. ['SSN', 'DOB']
-  injectionDetected:         false,
-  protectedClassFound:       false,
-}
-```
-
-### What Each Guardrail Prevents
-
-| Guardrail | Attack / Failure It Prevents |
-|-----------|------------------------------|
-| Prompt injection filter | Broker embeds "ignore all previous instructions" in their PDF |
-| PII detection | SSNs / DOBs in a submission text reaching the model as scoring inputs |
-| Protected class detection | Racial or disability language in a submission influencing the risk score |
-| Input length limit | Submission engineered to overflow the context window and distort output |
-| Output schema validation | Model hallucinating extra fields or returning out-of-range scores |
-| Confidence floor (code) | Model says APPROVE at 45% confidence — blocked regardless of prompt |
-| GI compliance override | Model recommends DECLINE for a guaranteed-issue small group |
-| ERISA preemption | State GI rules incorrectly applied to self-funded federal plans |
-| Advisory-only framing | Model claiming to make a binding decision |
-| No scores in adverse notice | Internal scoring model leaked to brokers via adverse action letter |
+| Gap | Why it matters | Solution |
+|-----|----------------|----------|
+| Backend API + database | Data resets on refresh today | PostgreSQL + REST API (see Phase 1 below) |
+| Authentication | Hardcoded demo user | JWT + MFA + SAML/SSO |
+| Server-side API key proxy | Key must never live in the browser in production | Backend proxy endpoint |
+| Audit log immutability | Append-only with tamper-evidence required by NAIC | Insert-only DB table with signed rows |
+| HIPAA BAA | Required before processing real PHI | Anthropic enterprise agreement |
+| Full state coverage | 10 states have full detail today | Expand to all 51 |
+| Rate limiting | No throttle on AI calls | Backend middleware |
+| Penetration testing | SOC 2 / security review | Third-party audit |
 
 ---
 
 ## Prototype → Production Roadmap
 
-This section maps the delta between today's prototype and a production-grade system. Written as a phased delivery plan a technical team could execute.
-
-```
-  PROTOTYPE TODAY                   PRODUCTION TARGET
-  ─────────────────────────────     ──────────────────────────────────
-  In-memory Zustand state     →     PostgreSQL + REST API
-  Hardcoded user (John Doe)   →     Auth (JWT, MFA, SSO/SAML)
-  No persistence              →     Data survives sessions / users
-  Client-only API key         →     Server-side key proxy
-  10 state rules (full)       →     51 states (full)
-  No email / notifications    →     Real email (adverse action notices)
-  Manual audit log            →     Immutable append-only audit table
-  Single tenant               →     Multi-tenant with org isolation
-```
-
 ### Phase 1 — Foundation (Weeks 1–6)
-*Goal: real data persistence, real auth, secure AI proxy*
+*Real data persistence, real auth, secure AI proxy*
 
 ```
   ┌─────────────────────────────────────────────────────────┐
@@ -892,34 +976,25 @@ This section maps the delta between today's prototype and a production-grade sys
   │  ├── submissions       (all fields, immutable history)  │
   │  ├── decisions         (separate table, append-only)    │
   │  ├── eois              (PHI-adjacent, encrypted at rest) │
-  │  ├── enrollments                                        │
   │  ├── audit_log         (insert-only, signed rows)       │
-  │  ├── users             (hashed passwords, MFA secrets)  │
-  │  └── roles_permissions (custom role definitions)       │
+  │  └── users / roles_permissions                          │
   │                                                         │
   │  Auth                                                   │
-  │  ├── Email + password with bcrypt                       │
-  │  ├── TOTP-based MFA (already shown in Security UI)      │
+  │  ├── Email + password (bcrypt)                          │
+  │  ├── TOTP-based MFA (UI already built)                  │
   │  ├── Session tokens (httpOnly cookies)                  │
-  │  └── SAML/SSO (already wired in Team & Access UI)       │
+  │  └── SAML/SSO (UI already wired in Team & Access)       │
   └─────────────────────────────────────────────────────────┘
 ```
 
-**Key decisions at this phase:**
-- Move the Anthropic API key to the server. It should never be in a browser in production.
-- Add row-level security (RLS) in PostgreSQL so users only see their own org's data.
-- Replace `console.warn` guardrail logging with structured server-side logs.
-
----
-
 ### Phase 2 — Production AI Hardening (Weeks 7–10)
-*Goal: full guardrails, monitoring, HIPAA readiness*
+*Full guardrails, monitoring, HIPAA readiness*
 
 ```
   ┌─────────────────────────────────────────────────────────┐
   │  Guardrail enhancements                                 │
   │  ├── Rate limiting per user (max N analyses/hour)       │
-  │  ├── Input PII scrubber with redaction (not just flag)  │
+  │  ├── PII redaction (not just flag — scrub before send)  │
   │  ├── Output drift monitor (alert if avg score shifts)   │
   │  ├── Human review sampling (5% of AI decisions audited) │
   │  └── Expand state rules to all 51 states                │
@@ -927,46 +1002,36 @@ This section maps the delta between today's prototype and a production-grade sys
   │  Observability                                          │
   │  ├── Structured logging (every AI call: input hash,     │
   │  │   output, guardrail events, latency, model version)  │
-  │  ├── Dashboards: recommendation distribution,           │
-  │  │   override rates, guardrail trigger frequency        │
   │  └── Alerting: spike in DECLINE rate, confidence drop   │
   │                                                         │
   │  HIPAA Readiness                                        │
   │  ├── Sign BAA with Anthropic (enterprise agreement)     │
   │  ├── EOI data encrypted at rest (AES-256)               │
-  │  ├── PHI access logs separate from general audit log    │
   │  └── Data retention policy (7 years per NAIC model law) │
   └─────────────────────────────────────────────────────────┘
 ```
 
----
-
 ### Phase 3 — Agentic Workflows (Weeks 11–16)
-*Goal: autonomous processing for routine submissions — see Agentic Architecture below*
-
----
+*Autonomous processing for routine submissions — see [Agentic Architecture](#future-state-agentic-architecture) below*
 
 ### Phase 4 — Enterprise & Scale (Post-launch)
-*Goal: multi-carrier SaaS, marketplace, advanced AI*
 
 ```
   ┌─────────────────────────────────────────────────────────┐
   │  Multi-tenancy                                          │
-  │  ├── Org-level data isolation                           │
+  │  ├── Org-level data isolation (row-level security)      │
   │  ├── Per-org carrier configurations                     │
-  │  ├── White-label option for MGAs                        │
-  │  └── Usage-based billing (per decision, per carrier)    │
+  │  └── White-label option for MGAs                        │
   │                                                         │
   │  Advanced AI                                            │
   │  ├── Fine-tuned model on historical decisions           │
-  │  ├── Carrier-specific model calibration                 │
   │  ├── Continuous learning from human overrides           │
   │  └── Predictive renewal risk (not just new business)    │
   │                                                         │
   │  Integrations                                           │
   │  ├── Carrier systems (EDI 834/835 via existing config)  │
   │  ├── Broker portals (API submission intake)             │
-  │  ├── AMS360 / BenefitPoint / Agency Zoom               │
+  │  ├── AMS360 / BenefitPoint / AgencyZoom                 │
   │  └── DocuSign / HelloSign for EOI collection            │
   └─────────────────────────────────────────────────────────┘
 ```
@@ -1017,17 +1082,17 @@ The next evolution is **agentic AI**: systems that reason across multiple steps,
   │
   ▼
   Decision tree:
-  ├── Risk score ≤ 35 + confidence ≥ 80 + GI check pass
+  ├── Risk ≤ 35 + confidence ≥ 80 + GI check pass
   │     → AUTO-APPROVE: issue quote, notify broker, log decision
   │
-  ├── Risk score ≥ 75 + confidence ≥ 80 + no GI conflict
+  ├── Risk ≥ 75 + confidence ≥ 80 + no GI conflict
   │     → AUTO-DECLINE: generate adverse action notice, send to broker
   │
-  └── Everything else (score 36–74, or confidence < 80)
+  └── Everything else
         → REFER: assign to underwriter queue with full AI context
 
   Human checkpoint: underwriter reviews all REFER cases.
-  Human override: available on any auto-approved or auto-declined case.
+  Human override: available on any auto decision.
 ```
 
 #### Agent 2 — Missing Information Agent
@@ -1039,24 +1104,23 @@ The next evolution is **agentic AI**: systems that reason across multiple steps,
   ▼
   [Agent: Missing Info]
   Tools available:
-  ├── identify_gaps(assessment)     → list of missing fields + why they matter
-  ├── draft_broker_request(gaps)    → generate polite, specific info request
+  ├── identify_gaps(assessment)     → list missing fields + why
+  ├── draft_broker_request(gaps)    → generate specific info request
   ├── send_email(broker, message)   → send via email provider
-  ├── set_deadline(days)            → flag submission for follow-up in N days
+  ├── set_deadline(days)            → flag for follow-up in N days
   ├── receive_response(email)       → parse broker reply for new data
   └── re_run_assessment(sub)        → updated analysis with new data
   │
   ▼
   Loop: re-run until either:
   ├── dataCompleteness ≥ 0.85 → proceed to decision
-  └── deadline exceeded       → escalate to underwriter with full history
+  └── deadline exceeded       → escalate to underwriter
 
   Human checkpoint: underwriter handles all deadline-exceeded cases.
-  Audit trail: every email sent/received logged with timestamps.
 ```
 
 #### Agent 3 — Adverse Action Agent
-*Monitors deadlines and generates/delivers compliant notices automatically*
+*Monitors deadlines and delivers compliant notices automatically*
 
 ```
   TRIGGER: Scheduled check (runs daily)
@@ -1064,7 +1128,7 @@ The next evolution is **agentic AI**: systems that reason across multiple steps,
   ▼
   [Agent: Adverse Action Monitor]
   Tools available:
-  ├── get_pending_notices()          → all declined submissions with no notice sent
+  ├── get_pending_notices()          → declined subs with no notice sent
   ├── check_deadline(sub)            → days remaining per state rules
   ├── generate_notice(sub, reasons)  → compliance.js (already exists)
   ├── send_notice(broker, notice)    → email/certified mail integration
@@ -1073,11 +1137,8 @@ The next evolution is **agentic AI**: systems that reason across multiple steps,
   ▼
   Escalation rules:
   ├── > 5 days remaining → schedule automatically
-  ├── 2–5 days remaining → notify underwriter to review before sending
+  ├── 2–5 days remaining → notify underwriter to review first
   └── < 2 days remaining → emergency alert to compliance officer
-
-  Human checkpoint: compliance officer approves notices with < 5 days remaining.
-  Regulatory requirement: adverse action notices are legally required documents.
 ```
 
 ### Agentic Architecture Design
@@ -1096,19 +1157,18 @@ The next evolution is **agentic AI**: systems that reason across multiple steps,
   │  • Tool calling   │ │  run_assessment()  → ai.js             │
   │  • Step logging   │ │  send_email()      → email provider    │
   │  • Max step limit │ │  query_db()        → backend API       │
-  │    (prevents inf. │ │  update_record()   → backend API       │
-  │     loops)        │ │  escalate_human()  → notification svc  │
-  └──────────┬────────┘ └───────────────────────────────────────┘
+  │    (no inf. loops)│ │  update_record()   → backend API       │
+  └──────────┬────────┘ │  escalate_human()  → notification svc  │
+             │          └───────────────────────────────────────┘
              │
   ┌──────────▼──────────────────────────────────────────────────┐
   │                  HUMAN-IN-THE-LOOP GATES                     │
   │                                                              │
-  │  Every agent has defined escalation conditions:              │
-  │  • Confidence below threshold → mandatory human review       │
-  │  • Legal document (adverse action notice) → human approval   │
-  │  • Amount above auto-approve threshold → queue for UW        │
-  │  • Agent stuck (3+ failed tool calls) → escalate immediately │
-  │  • Max steps reached without resolution → escalate           │
+  │  • Confidence below threshold  → mandatory human review      │
+  │  • Legal document to be sent   → human approval required     │
+  │  • Amount above auto-approve   → route to underwriter queue  │
+  │  • Agent stuck (3+ failures)   → escalate immediately        │
+  │  • Max steps reached           → escalate with full trace    │
   │                                                              │
   │  Principle: agents handle volume. Humans handle edge cases.  │
   └─────────────────────────────────────────────────────────────┘
@@ -1116,102 +1176,26 @@ The next evolution is **agentic AI**: systems that reason across multiple steps,
 
 ### Implementation Path for Agents
 
-The prototype already contains most of the tool logic — it just isn't yet wrapped in an agent runtime. Here's what would need to be built:
+Most of the tool logic already exists in the prototype — it just isn't yet wrapped in an agent runtime:
 
-| What's needed | What we already have | What's missing |
-|---------------|---------------------|----------------|
-| Document parsing tool | `fileParser.js` — complete | API wrapper |
-| Compliance check tool | `compliance.js` — complete | API wrapper |
-| AI assessment tool | `callClaudeAPI()` — complete | API wrapper |
-| Adverse action notice tool | `generateAdverseActionNotice()` — complete | Email integration |
+| Needed | Already built | Still missing |
+|--------|---------------|---------------|
+| Document parsing tool | `fileParser.js` — complete | API endpoint wrapper |
+| Compliance check tool | `compliance.js` — complete | API endpoint wrapper |
+| AI assessment tool | `callClaudeAPI()` — complete | API endpoint wrapper |
+| Adverse action notice | `generateAdverseActionNotice()` — complete | Email integration |
 | Agent reasoning loop | — | Build with Anthropic tool use API |
-| Tool call schema | — | Define JSON tool schemas |
-| Step logging / audit | Audit log architecture exists | Connect agent steps to it |
+| Tool call schemas | — | Define JSON tool schemas |
+| Step logging | Audit log architecture exists | Connect agent steps to it |
 | Human escalation gate | Queue + notification UI exists | Connect to agent output |
 
-**Recommended approach:** Use Anthropic's [tool use API](https://docs.anthropic.com/en/docs/build-with-claude/tool-use) to wrap the existing engine functions as tools. The agent reasoning loop is then a `while` loop that calls Claude with available tools, executes whichever tool Claude selects, feeds the result back, and repeats until Claude returns a `stop` response or a gate condition fires.
-
----
-
-## Getting Started
-
-### Prerequisites
-- Node.js 18+
-- An [Anthropic API key](https://console.anthropic.com) (for live AI features)
-
-### Run locally
-
-```bash
-git clone https://github.com/mdskmohan/Uniblox.git
-cd Uniblox
-npm install
-npm run dev
-# → http://localhost:5173
-```
-
-### Build for production
-
-```bash
-npm run build       # output → dist/
-npm run preview     # serve dist/ locally at :4173
-```
-
-### Connect the AI
-
-1. Open the app → click your avatar (top-right) → **Settings**
-2. Navigate to **AI Settings**
-3. Paste your Anthropic API key → **Save Key**
-4. Click **Test Connection** — should confirm the model and latency
-5. All underwriting analyses, census AI, and the AI Assistant are now live
-
-> The key lives in browser memory only. It is never written anywhere. Refreshing the page clears it.
-
----
-
-## Is This Production-Ready?
-
-**What is production-quality:**
-- Full underwriting workflow, end-to-end, with real Claude API calls
-- Compliance engine is a faithful implementation of real state insurance rules
-- 5-layer AI guardrail pipeline — prompt injection, PII detection, schema validation, confidence floor, GI compliance override
-- Role-based access, permission system, audit log — all architecturally sound
-- UI/UX is polished to a commercial standard — dark mode, responsive, accessible
-- Error handling, retry logic, loading states, empty states — throughout
-
-**What would need to be added before real launch:**
-- A backend API and database (submissions, carriers, users persist in memory today)
-- Auth (JWT/session-based, currently simulated with a hardcoded user)
-- Server-side API key proxy (key must never be in the browser in production)
-- True audit log immutability (append-only table, tamper-evident)
-- HIPAA Business Associate Agreement with Anthropic before processing real PHI
-- Rate limiting and API key rotation
-- State rules expanded to all 51 states (full detail currently covers 10 states)
-- Penetration testing and SOC 2 readiness
-
-**Summary:** This is a **high-fidelity, fully interactive prototype** that demonstrates every major workflow at commercial quality. It is ready to show to investors, design partners, and enterprise prospects. The architecture is production-aligned — the main gap is a backend, auth layer, and server-side API proxy.
-
----
-
-## Screenshots
-
-The app ships with realistic seed data across multiple carriers, submissions, EOIs, and enrollments — no setup needed to explore the full workflow.
-
-```
-  New Submission → Upload PDF / paste text → AI scores in ~5 seconds
-  Submission Detail → Full risk breakdown, sub-scores, compliance notes, copilot
-  Underwriting Queue → Sorted by priority, risk, and adverse action deadlines
-  Carrier Config → Full appetite grid, state toggles, automation thresholds
-  Team & Access → Role cards with permission modal, custom roles, invite flow
-  State Guidelines → All 51 states, searchable, full regulatory detail for 10
-  Audit Log → Every decision, immutable, exportable
-  AI Assistant → Context-aware copilot, knows your queue live
-```
+**Recommended approach:** Use Anthropic's [tool use API](https://docs.anthropic.com/en/docs/build-with-claude/tool-use) to wrap the existing engine functions as tools. The agent loop is then a `while` loop that calls Claude with available tools, executes whichever tool Claude selects, feeds the result back, and repeats until Claude returns `stop_reason: "end_turn"` or a human-in-the-loop gate fires.
 
 ---
 
 ## License
 
-MIT — see `LICENSE`
+MIT
 
 ---
 
