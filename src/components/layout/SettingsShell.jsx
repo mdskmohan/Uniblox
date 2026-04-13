@@ -63,7 +63,7 @@ export default function SettingsShell() {
                        transition-colors group"
           >
             <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform flex-shrink-0" />
-            <span>Back to app</span>
+            <span>Back</span>
           </button>
         </div>
 
