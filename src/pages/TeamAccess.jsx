@@ -71,7 +71,7 @@ const TABS = [
 ]
 
 // ── Role Permissions Modal ─────────────────────────────────────────────────────
-function RolePermissionsModal({ roleKey, role, currentPerms, onSave, onClose }) {
+function RolePermissionsModal({ roleKey, role, currentPerms, onSave, onDelete, onClose }) {
   const [localPerms, setLocalPerms] = useState([...currentPerms])
   const groups = [...new Set(PERMISSION_LIST.map((p) => p.group))]
 
@@ -142,7 +142,16 @@ function RolePermissionsModal({ roleKey, role, currentPerms, onSave, onClose }) 
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-line flex-shrink-0">
+        <div className="flex items-center gap-2 px-5 py-4 border-t border-line flex-shrink-0">
+          {!role.system && onDelete && (
+            <Button
+              variant="secondary"
+              className="text-destructive hover:bg-destructive/10 border-destructive/30 mr-auto"
+              onClick={() => { onDelete(roleKey); onClose() }}
+            >
+              <Trash2 size={13} /> Delete Role
+            </Button>
+          )}
           <Button variant="secondary" onClick={onClose}>Cancel</Button>
           <Button onClick={() => { onSave(roleKey, localPerms); onClose() }}>Save Changes</Button>
         </div>
@@ -483,7 +492,8 @@ export default function TeamAccess() {
                     {!r.system && (
                       <button
                         onClick={(e) => { e.stopPropagation(); handleDeleteRole(key) }}
-                        className="text-ink-tertiary hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
+                        className="text-ink-tertiary hover:text-destructive transition-colors"
+                        title="Delete role"
                       >
                         <Trash2 size={12} />
                       </button>
@@ -524,6 +534,7 @@ export default function TeamAccess() {
               role={roles[roleModalOpen]}
               currentPerms={permissions[roleModalOpen] || []}
               onSave={handleSavePermissions}
+              onDelete={handleDeleteRole}
               onClose={() => setRoleModalOpen(null)}
             />
           )}

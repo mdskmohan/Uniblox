@@ -95,6 +95,8 @@ const useAppStore = create((set, get) => ({
 
   // ─── Carrier actions ─────────────────────────────────────────
   setActiveCarrier: (id) => set({ activeCarrierId: id }),
+  addCarrier: (carrier) =>
+    set((s) => ({ carriers: [...s.carriers, carrier] })),
   updateCarrier: (id, updates) =>
     set((s) => ({
       carriers: s.carriers.map((c) => (c.id === id ? { ...c, ...updates } : c)),

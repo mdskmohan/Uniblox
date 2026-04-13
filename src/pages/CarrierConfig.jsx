@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
-import { Plus, Info } from 'lucide-react'
+import { Plus, Info, X } from 'lucide-react'
 import useAppStore from '@/store/useAppStore'
 import { Button } from '@/components/ui/button'
 import { Input, Textarea, Select, FormGroup } from '@/components/ui/input'
@@ -38,9 +38,116 @@ function initStates(carrier) {
   return []
 }
 
+// ── Add Carrier Modal ──────────────────────────────────────────────────────────
+function AddCarrierModal({ onSave, onClose }) {
+  const [form, setForm] = useState({
+    name: '', legalName: '', naicNumber: '', primaryContact: '',
+    contractStart: '', status: 'Active',
+  })
+
+  function set(key, val) {
+    setForm((f) => ({ ...f, [key]: val }))
+  }
+
+  function save() {
+    if (!form.name.trim())       { toast.error('Carrier name is required'); return }
+    if (!form.naicNumber.trim()) { toast.error('NAIC number is required'); return }
+
+    const id = `carrier_${Date.now()}`
+    onSave({
+      id,
+      name:           form.name.trim(),
+      legalName:      form.legalName.trim() || form.name.trim(),
+      naicNumber:     form.naicNumber.trim(),
+      primaryContact: form.primaryContact.trim(),
+      contractStart:  form.contractStart,
+      status:         form.status,
+      submissionCount: 0,
+      industryAppetite: {},
+      states: [],
+      autoApproveThreshold: 35,
+      autoDeclineThreshold: 75,
+      confidenceMinimum: 65,
+      customRules: '',
+    })
+    toast.success(`Carrier "${form.name.trim()}" added`)
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+      <div className="bg-surface-primary rounded-xl border border-line shadow-2xl w-full max-w-md animate-fadeIn">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-line">
+          <span className="font-semibold text-ink-primary">Add New Carrier</span>
+          <button onClick={onClose} className="text-ink-tertiary hover:text-ink-primary">
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-3">
+          <FormGroup label="Carrier Name *">
+            <Input
+              value={form.name}
+              onChange={(e) => set('name', e.target.value)}
+              placeholder="e.g. Apex Life Insurance"
+              autoFocus
+            />
+          </FormGroup>
+          <FormGroup label="Legal Entity Name">
+            <Input
+              value={form.legalName}
+              onChange={(e) => set('legalName', e.target.value)}
+              placeholder="Full legal name (defaults to carrier name)"
+            />
+          </FormGroup>
+          <div className="grid grid-cols-2 gap-3">
+            <FormGroup label="NAIC Number *">
+              <Input
+                value={form.naicNumber}
+                onChange={(e) => set('naicNumber', e.target.value)}
+                placeholder="e.g. 71234"
+              />
+            </FormGroup>
+            <FormGroup label="Contract Status">
+              <Select
+                value={form.status}
+                onChange={(e) => set('status', e.target.value)}
+              >
+                <option value="Active">Active</option>
+                <option value="Pending">Pending</option>
+                <option value="Inactive">Inactive</option>
+              </Select>
+            </FormGroup>
+          </div>
+          <FormGroup label="Primary Contact">
+            <Input
+              value={form.primaryContact}
+              onChange={(e) => set('primaryContact', e.target.value)}
+              placeholder="e.g. Jane Smith"
+            />
+          </FormGroup>
+          <FormGroup label="Contract Start Date">
+            <Input
+              type="date"
+              value={form.contractStart}
+              onChange={(e) => set('contractStart', e.target.value)}
+            />
+          </FormGroup>
+        </div>
+
+        <div className="flex gap-2 px-5 pb-5">
+          <Button variant="secondary" className="flex-1" onClick={onClose}>Cancel</Button>
+          <Button className="flex-1" onClick={save}>Add Carrier</Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function CarrierConfig() {
-  const { carriers, activeCarrierId, updateCarrier } = useAppStore()
-  const [selectedId, setSelectedId] = useState(activeCarrierId)
+  const { carriers, activeCarrierId, updateCarrier, addCarrier } = useAppStore()
+  const [selectedId,   setSelectedId]   = useState(activeCarrierId)
+  const [addOpen,      setAddOpen]      = useState(false)
   const carrier = carriers.find((c) => c.id === selectedId) || carriers[0]
 
   // Profile
@@ -157,7 +264,7 @@ export default function CarrierConfig() {
           ))}
         </div>
         <Button size="sm" variant="secondary" className="w-full mt-3"
-          onClick={() => toast.info('Add carrier coming soon')}>
+          onClick={() => setAddOpen(true)}>
           <Plus size={13} /> Add Carrier
         </Button>
       </div>
@@ -400,6 +507,16 @@ export default function CarrierConfig() {
           </div>
         </Section>
       </div>
+
+      {addOpen && (
+        <AddCarrierModal
+          onSave={(newCarrier) => {
+            addCarrier(newCarrier)
+            setSelectedId(newCarrier.id)
+          }}
+          onClose={() => setAddOpen(false)}
+        />
+      )}
     </div>
   )
 }
