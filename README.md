@@ -98,84 +98,32 @@ Uniblox is organized into five operational modules, each mapping to a real workf
 
 ## Competitive Landscape
 
-Uniblox was built by studying the direct competitors in the AI-assisted insurance underwriting and insurtech workflow space. This prototype draws inspiration from their product approaches and improves on their specific gaps.
+Uniblox is purpose-built for the group benefits underwriting workflow. Here is how it maps against the direct players in this space.
 
-### Direct Competitors
+| Competitor | What they do | Our lane |
+|-----------|-------------|----------|
+| **Federato** | AI underwriting workstation (RiskOps) — portfolio risk selection, P&C-focused | Federato owns P&C. Group benefits has a different regulatory environment — GI laws, community rating, adverse action deadlines — that Federato does not address |
+| **Gradient AI** | AI risk scoring for group benefits, actuarial ML on historical claims data | They score without explaining. We show the full reasoning, compliance notes, and carrier appetite match so underwriters can verify the output |
+| **Majesco** | Enterprise insurance core system with an AI layer, months-long implementation | We run day-one as a co-pilot alongside existing systems — no IT project, no migration |
+| **EbixExchange / iPipeline** | Broker-to-carrier submission routing — moves PDFs faster, adds no intelligence | They solve the routing problem. We solve the decision problem — we start where they end |
+| **Applied Epic / AMS360** | Broker-side agency management — CRM, submissions, commissions | Broker-side tools with no underwriting intelligence. Uniblox is the carrier-side decision layer and a natural downstream integration |
 
-**Gradient AI**
-The closest direct competitor. Offers AI-powered group benefits underwriting with risk scoring and carrier integration. Their focus is on predictive analytics and historical claims data modeling.
-- *What they do well:* Deep ML models trained on large historical claims datasets
-- *What we improve on:* Their product requires significant implementation time and is opaque to underwriters. Uniblox puts the reasoning on screen — underwriters see exactly why the AI scored a submission the way it did, not just a number
-- *Key difference:* Uniblox is explanation-first. Every recommendation comes with reasoning points, compliance notes, and carrier appetite context, not just a score
-
-**Majesco**
-Enterprise insurance core system + AI layer. Covers P&C and life/benefits with a workflow automation focus. Very established, very large.
-- *What they do well:* End-to-end carrier system of record, deep integration with existing workflows
-- *What we improve on:* Majesco is an enterprise implementation that takes months to deploy. Uniblox is designed to be usable on day one — paste a submission and get a scored, compliance-checked result in seconds
-- *Key difference:* Speed to value. Uniblox can run alongside an existing system as an underwriting co-pilot without replacing it
-
-**EbixExchange / Ipipeline**
-Broker-to-carrier submission routing platforms that digitize the submission intake process. They move PDFs faster but don't add intelligence.
-- *What they do well:* Standardized submission formats, broker portal integrations, carrier connectivity
-- *What we improve on:* They solve the routing problem, not the decision problem. Uniblox starts where they end — after the submission is received — and applies AI to the decision
-- *Key difference:* We're not a submission router. We're a decision engine
-
-**Federato**
-The most sophisticated AI underwriting workstation on the market today. Their RiskOps platform uses AI to help underwriters triage submissions, optimize portfolio selection, and make better risk decisions — with a strong focus on P&C lines. Well-funded, enterprise-grade.
-- *What they do well:* Portfolio-level optimization — not just "is this submission good?" but "does this submission make the overall book better?" Their AI reasons about portfolio concentration, correlated exposures, and strategic risk selection at a carrier level. Deep integrations with carrier systems of record
-- *What we improve on:* Federato is primarily P&C focused. The group benefits / employee benefits space (health, life, disability) has different compliance requirements — guaranteed issue laws, community rating, adverse action deadlines — that Federato doesn't address. Uniblox is purpose-built for group benefits underwriting with a compliance engine baked in, not bolted on
-- *Key difference:* Vertical specialization. Federato owns P&C underwriting workflows; Uniblox owns group benefits underwriting — a separate and equally complex regulatory environment
-
-**Gradient AI**
-AI-powered group benefits underwriting with risk scoring and carrier integration. Their focus is on predictive analytics and historical claims data modeling.
-- *What they do well:* Deep ML models trained on large historical claims datasets; actuarial-grade risk prediction
-- *What we improve on:* The product is opaque to underwriters — they receive a score without seeing the reasoning behind it. Uniblox shows the reasoning, compliance notes, and carrier appetite match on the same screen so the underwriter can trust and verify the AI output
-- *Key difference:* Uniblox is explanation-first. Every recommendation includes reasoning points, compliance flags, and confidence level — not just a number
-
-**Majesco**
-Enterprise insurance core system + AI layer. Covers P&C and life/benefits with workflow automation. Very established, very large.
-- *What they do well:* End-to-end carrier system of record, deep integration with existing carrier infrastructure
-- *What we improve on:* Majesco is an enterprise implementation that takes months to deploy and requires IT involvement at every step. Uniblox is designed to be usable on day one — paste a submission, get a scored, compliance-checked result in seconds
-- *Key difference:* Speed to value and simplicity. Uniblox can operate as an underwriting co-pilot alongside an existing system without replacing it
-
-**EbixExchange / Ipipeline**
-Broker-to-carrier submission routing platforms. They digitize and move PDFs faster but add no underwriting intelligence.
-- *What they do well:* Standardized submission formats, broker portal integrations, carrier connectivity
-- *What we improve on:* They solve the routing problem, not the decision problem. Uniblox starts where they end — after the submission is received — and applies AI to the underwriting decision itself
-- *Key difference:* We're not a submission router. We're a decision engine
-
-**Applied Epic / Vertafore AMS360**
-Agency Management Systems used by brokers to manage submissions and client relationships. Not underwriting tools, but they're where submissions originate.
-- *What they do well:* Broker-side workflow, CRM, commission tracking
-- *What we improve on:* These systems have no underwriting intelligence — they sit on the broker's side of the table. Uniblox sits on the carrier/MGA side and is the natural integration target
-- *Key difference:* Complementary, not competitive — Uniblox integrates as a downstream decision layer for submissions originating in AMS systems
-
-### Where Uniblox Sits
+### Where Uniblox Sits in the Value Chain
 
 ```
-  BROKER SIDE                         CARRIER / MGA SIDE
-  ──────────────────────────          ───────────────────────────────────────
-  AMS360 / Applied Epic               Majesco / Duck Creek (system of record)
-  Ipipeline / EbixExchange  ────────► [UNIBLOX — AI decision layer] ────────► Carrier
-  (submission routing)                Federato (P&C focus)
-                                      Gradient AI (group benefits, competing here)
+  BROKER SIDE                        CARRIER / MGA SIDE
+  ─────────────────────────          ─────────────────────────────────────────
+  AMS360 / Applied Epic              Majesco (system of record)
+  iPipeline / EbixExchange  ───────► UNIBLOX (AI decision layer) ───────────► Carrier
+  (submission routing)               Federato (P&C) · Gradient AI (group benefits)
 ```
 
-### What Makes Uniblox Different
+### Our Defensible Differentiators
 
-| Capability | Federato | Gradient AI | Majesco | Ipipeline | Uniblox |
-|-----------|----------|-------------|---------|-----------|---------|
-| AI risk scoring | ✓ (P&C) | ✓ (group) | Partial | ✗ | ✓ (group) |
-| Explainable reasoning | Partial | Partial | ✗ | ✗ | ✓ |
-| Group benefits compliance engine | ✗ | ✗ | Partial | ✗ | ✓ |
-| State GI / community rating rules | ✗ | ✗ | Partial | ✗ | ✓ |
-| Editable AI prompt per carrier | ✗ | ✗ | ✗ | ✗ | ✓ |
-| Carrier appetite grid | ✓ | Partial | ✓ | ✗ | ✓ |
-| In-browser file parsing | ✗ | ✗ | ✗ | ✗ | ✓ |
-| AI copilot for underwriters | Partial | ✗ | ✗ | ✗ | ✓ |
-| Day-one usability | ✗ | ✗ | ✗ (months) | Partial | ✓ |
-| Agentic roadmap | Unknown | Unknown | Unknown | ✗ | Planned |
-
+- **Compliance engine built in, not bolted on** — 51-state rule set enforced before every AI call. No direct competitor does this natively for group benefits
+- **Explainable AI** — every recommendation shows reasoning, sub-scores, carrier appetite match, and confidence level. Underwriters verify, not just accept
+- **Carrier-configurable** — appetite grid, auto-approve/decline thresholds, and custom AI rules are editable per carrier with no code changes
+- **Day-one usable** — paste a submission, get a scored and compliant result in seconds
 ---
 
 ## Getting Started
